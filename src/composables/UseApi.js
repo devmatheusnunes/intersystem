@@ -15,11 +15,7 @@ import {
 
 import { db } from 'src/boot/firebase'
 
-import useAuthUser from './UseAuthUser.js'
-
 export default function useApi() {
-  const { user } = useAuthUser()
-
   const list = async (collectionName) => {
     const snapshot = await getDocs(collection(db, collectionName))
 
@@ -47,9 +43,8 @@ export default function useApi() {
   const post = async (collectionName, form) => {
     const docRef = await addDoc(collection(db, collectionName), {
       ...form,
-      userId: user.value?.uid || null,
 
-      createdAt: new Date(),
+      createdAt: form.createdAt || new Date(),
 
       updatedAt: null,
     })

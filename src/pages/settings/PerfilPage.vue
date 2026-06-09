@@ -125,6 +125,9 @@ import { useRoute, useRouter } from 'vue-router'
 import useApi from 'src/composables/UseApi.js'
 import useNotify from 'src/composables/UseNotify'
 
+import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { secondaryAuth } from 'boot/firebase'
+
 const api = useApi()
 const { notifySuccess, notifyError } = useNotify()
 
@@ -177,7 +180,12 @@ const loadData = async () => {
       const user = await api.getById('users', userId.value)
 
       if (user) {
-        form.value = { ...form.value, ...user }
+        form.value = {
+          ...form.value,
+          ...user,
+          senha: '',
+          confirmarSenha: '',
+        }
       }
     }
 
@@ -198,8 +206,12 @@ const validate = () => {
 
   if (!form.value.id) {
     if (!form.value.senha) return 'Informe a senha'
+
     if (form.value.senha.length < 6) return 'Senha deve ter no mínimo 6 caracteres'
-    if (form.value.senha !== form.value.confirmarSenha) return 'Senhas não conferem'
+
+    if (form.value.senha !== form.value.confirmarSenha) {
+      return 'Senhas não conferem'
+    }
   }
 
   return null
@@ -208,9 +220,13 @@ const validate = () => {
 const saveUser = async () => {
   try {
     const error = validate()
-    if (error) return notifyError(error)
+
+    if (error) {
+      return notifyError(error)
+    }
 
     const role = roles.value.find((r) => r.id === form.value.roleId)
+
     const setor = setores.value.find((s) => s.id === form.value.setorId)
 
     const payload = {
@@ -225,20 +241,51 @@ const saveUser = async () => {
       updatedAt: new Date(),
     }
 
+    // ==========================
+    // EDIÇÃO
+    // ==========================
     if (form.value.id) {
       await api.update('users', form.value.id, payload)
+
       notifySuccess('Usuário atualizado com sucesso')
-    } else {
-      await api.post('users', {
-        ...payload,
-        senha: form.value.senha,
-        createdAt: new Date(),
-      })
-      notifySuccess('Usuário criado com sucesso')
+
+      router.push('/app/settings/users')
+      return
     }
+
+    // ==========================
+    // NOVO USUÁRIO
+    // ==========================
+    const credential = await createUserWithEmailAndPassword(
+      secondaryAuth,
+      form.value.email,
+      form.value.senha,
+    )
+
+    const uid = credential.user.uid
+
+    await secondaryAuth.signOut()
+
+    await api.post('users', {
+      ...payload,
+      userId: uid,
+      createdAt: new Date(),
+    })
+
+    notifySuccess('Usuário criado com sucesso')
 
     router.push('/app/settings/users')
   } catch (err) {
+    console.error(err)
+
+    if (err.code === 'auth/email-already-in-use') {
+      return notifyError('Este email já está cadastrado')
+    }
+
+    if (err.code === 'auth/weak-password') {
+      return notifyError('Senha muito fraca')
+    }
+
     notifyError(err?.message || 'Erro ao salvar')
   }
 }

@@ -2,6 +2,7 @@ import { boot } from 'quasar/wrappers'
 
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
+
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -14,11 +15,17 @@ const firebaseConfig = {
   measurementId: 'G-S773MFQS6L',
 }
 
+// APP PRINCIPAL
 const app = initializeApp(firebaseConfig)
 
 const auth = getAuth(app)
 const db = getFirestore(app)
 
-export { auth, db }
+// APP SECUNDÁRIA
+const secondaryApp = initializeApp(firebaseConfig, 'secondary')
+
+const secondaryAuth = getAuth(secondaryApp)
+
+export { auth, db, secondaryAuth }
 
 export default boot(() => {})

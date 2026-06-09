@@ -11,84 +11,289 @@
   >
     <q-scroll-area class="fit">
       <q-list padding>
-        <q-expansion-item
-          icon="shopping_cart"
-          label="COMPRAS"
-          default-opened
-          header-class="menu-group"
+
+    <!-- DASHBOARD -->
+
+    <q-item
+      v-if="hasPermission('dashboard.menu')"
+      clickable
+      to="/app"
+    >
+      <q-item-section avatar>
+        <q-icon name="dashboard" />
+      </q-item-section>
+
+      <q-item-section>
+        Dashboard
+      </q-item-section>
+    </q-item>
+
+    <!-- COMPRAS -->
+
+    <q-expansion-item
+      v-if="showPurchasesMenu"
+      icon="shopping_cart"
+      label="COMPRAS"
+      default-opened
+      header-class="menu-group"
+    >
+      <q-list class="submenu">
+
+        <q-item
+          v-if="hasPermission('requests.menu')"
+          clickable
+          to="/app/buy/requests"
+          class="submenu-item"
         >
-          <q-list class="submenu">
-            <q-item clickable to="/app/buy/requests" class="submenu-item">
-              <q-item-section avatar>
-                <q-icon name="description" size="18px" />
-              </q-item-section>
+          <q-item-section avatar>
+            <q-icon
+              name="description"
+              size="18px"
+            />
+          </q-item-section>
 
-              <q-item-section> Solicitações de Compras </q-item-section>
-            </q-item>
+          <q-item-section>
+            Solicitações
+          </q-item-section>
+        </q-item>
 
-            <q-item clickable to="/app/buy/history" class="submenu-item">
-              <q-item-section avatar>
-                <q-icon name="history" size="18px" />
-              </q-item-section>
+        <q-item
+          v-if="hasPermission('requests.menu')"
+          clickable
+          to="/app/buy/history"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="history"
+              size="18px"
+            />
+          </q-item-section>
 
-              <q-item-section> Histórico de Compras </q-item-section>
-            </q-item>
+          <q-item-section>
+            Histórico
+          </q-item-section>
+        </q-item>
 
-            <q-item clickable to="/app/buy/budget" class="submenu-item">
-              <q-item-section avatar>
-                <q-icon name="request_quote" size="18px" />
-              </q-item-section>
+        <q-item
+          v-if="hasPermission('budget.menu')"
+          clickable
+          to="/app/buy/budget"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="request_quote"
+              size="18px"
+            />
+          </q-item-section>
 
-              <q-item-section> Orçamentos </q-item-section>
-            </q-item>
+          <q-item-section>
+            Orçamentos
+          </q-item-section>
+        </q-item>
 
-            <q-item clickable to="/app/buy/analysis" class="submenu-item">
-              <q-item-section avatar>
-                <q-icon name="analytics" size="18px" />
-              </q-item-section>
+        <q-item
+          v-if="hasPermission('analysis.menu')"
+          clickable
+          to="/app/buy/analysis"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="analytics"
+              size="18px"
+            />
+          </q-item-section>
 
-              <q-item-section> Análise de Solicitações </q-item-section>
-            </q-item>
+          <q-item-section>
+            Análise
+          </q-item-section>
+        </q-item>
 
-            <q-item clickable to="/app/buy/payment" class="submenu-item">
-              <q-item-section avatar>
-                <q-icon name="payment" size="18px" />
-              </q-item-section>
+        <q-item
+          v-if="hasPermission('budget.finish')"
+          clickable
+          to="/app/buy/payment"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="payment"
+              size="18px"
+            />
+          </q-item-section>
 
-              <q-item-section> Pagamento de Solicitações </q-item-section>
-            </q-item>
-          </q-list>
-        </q-expansion-item>
+          <q-item-section>
+            Pagamentos
+          </q-item-section>
+        </q-item>
+
       </q-list>
-    </q-scroll-area>
+    </q-expansion-item>
 
-    <!-- Botão recolher -->
+    <!-- CONFIGURAÇÕES -->
 
-    <div class="q-mini-drawer-hide absolute" style="top: 15px; right: -17px">
-      <q-btn dense round unelevated color="primary" icon="chevron_left" @click="miniState = true" />
-    </div>
+    <q-expansion-item
+      v-if="showSettingsMenu"
+      icon="settings"
+      label="CONFIGURAÇÕES"
+      default-opened
+      header-class="menu-group"
+    >
+      <q-list class="submenu">
+
+        <q-item
+          v-if="hasPermission('users.menu')"
+          clickable
+          to="/app/settings/users"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="people"
+              size="18px"
+            />
+          </q-item-section>
+
+          <q-item-section>
+            Usuários
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          v-if="hasPermission('departments.menu')"
+          clickable
+          to="/app/settings/departments"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="business"
+              size="18px"
+            />
+          </q-item-section>
+
+          <q-item-section>
+            Setores
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          v-if="hasPermission('roles.menu')"
+          clickable
+          to="/app/settings/roles"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="admin_panel_settings"
+              size="18px"
+            />
+          </q-item-section>
+
+          <q-item-section>
+            Tipos de Usuários
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          v-if="hasPermission('logs.menu')"
+          clickable
+          to="/app/settings/logs"
+          class="submenu-item"
+        >
+          <q-item-section avatar>
+            <q-icon
+              name="history"
+              size="18px"
+            />
+          </q-item-section>
+
+          <q-item-section>
+            Logs
+          </q-item-section>
+        </q-item>
+
+      </q-list>
+    </q-expansion-item>
+
+  </q-list>
+</q-scroll-area>
+
+<div
+  class="q-mini-drawer-hide absolute"
+  style="top: 15px; right: -17px"
+>
+  <q-btn
+    dense
+    round
+    unelevated
+    color="primary"
+    icon="chevron_left"
+    @click="miniState = true"
+  />
+</div>
+
+
   </q-drawer>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import {
+  computed,
+  ref,
+} from 'vue'
+
+import usePermissions from 'src/composables/UsePermissions'
 
 const props = defineProps({
   modelValue: Boolean,
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits([
+  'update:modelValue',
+])
+
+const {
+  hasPermission,
+  hasAnyPermission,
+} = usePermissions()
 
 const miniState = ref(false)
 
 const drawerModel = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  set: value =>
+    emit(
+      'update:modelValue',
+      value,
+    ),
 })
 
-const drawerClick = (event) => {
+const showPurchasesMenu =
+  computed(() =>
+    hasAnyPermission([
+      'requests.menu',
+      'analysis.menu',
+      'budget.menu',
+    ]),
+  )
+
+const showSettingsMenu =
+  computed(() =>
+    hasAnyPermission([
+      'users.menu',
+      'departments.menu',
+      'roles.menu',
+      'logs.menu',
+    ]),
+  )
+
+const drawerClick = event => {
   if (miniState.value) {
     miniState.value = false
+
     event.stopPropagation()
   }
 }
