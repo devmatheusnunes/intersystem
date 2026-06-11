@@ -11,286 +11,117 @@
   >
     <q-scroll-area class="fit">
       <q-list padding>
+        <!-- DASHBOARD -->
 
-    <!-- DASHBOARD -->
-
-    <q-item
-      v-if="hasPermission('dashboard.menu')"
-      clickable
-      to="/app"
-    >
-      <q-item-section avatar>
-        <q-icon name="dashboard" />
-      </q-item-section>
-
-      <q-item-section>
-        Dashboard
-      </q-item-section>
-    </q-item>
-
-    <!-- COMPRAS -->
-
-    <q-expansion-item
-      v-if="showPurchasesMenu"
-      icon="shopping_cart"
-      label="COMPRAS"
-      default-opened
-      header-class="menu-group"
-    >
-      <q-list class="submenu">
-
-        <q-item
-          v-if="hasPermission('requests.menu')"
-          clickable
-          to="/app/buy/requests"
-          class="submenu-item"
-        >
+        <q-item v-for="item in dashboardItems" :key="item.key" clickable :to="item.route">
           <q-item-section avatar>
-            <q-icon
-              name="description"
-              size="18px"
-            />
+            <q-icon :name="item.icon" />
           </q-item-section>
 
           <q-item-section>
-            Solicitações
+            {{ item.title }}
           </q-item-section>
         </q-item>
 
-        <q-item
-          v-if="hasPermission('requests.menu')"
-          clickable
-          to="/app/buy/history"
-          class="submenu-item"
+        <!-- GRUPOS -->
+
+        <q-expansion-item
+          v-for="group in groupedMenus"
+          :key="group.name"
+          :label="group.name"
+          :icon="group.icon"
+          default-opened
+          header-class="menu-group"
         >
-          <q-item-section avatar>
-            <q-icon
-              name="history"
-              size="18px"
-            />
-          </q-item-section>
+          <q-list class="submenu">
+            <q-item
+              v-for="item in group.items"
+              :key="item.key"
+              clickable
+              :to="item.route"
+              class="submenu-item"
+            >
+              <q-item-section avatar>
+                <q-icon :name="item.icon" size="18px" />
+              </q-item-section>
 
-          <q-item-section>
-            Histórico
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="hasPermission('budget.menu')"
-          clickable
-          to="/app/buy/budget"
-          class="submenu-item"
-        >
-          <q-item-section avatar>
-            <q-icon
-              name="request_quote"
-              size="18px"
-            />
-          </q-item-section>
-
-          <q-item-section>
-            Orçamentos
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="hasPermission('analysis.menu')"
-          clickable
-          to="/app/buy/analysis"
-          class="submenu-item"
-        >
-          <q-item-section avatar>
-            <q-icon
-              name="analytics"
-              size="18px"
-            />
-          </q-item-section>
-
-          <q-item-section>
-            Análise
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="hasPermission('budget.finish')"
-          clickable
-          to="/app/buy/payment"
-          class="submenu-item"
-        >
-          <q-item-section avatar>
-            <q-icon
-              name="payment"
-              size="18px"
-            />
-          </q-item-section>
-
-          <q-item-section>
-            Pagamentos
-          </q-item-section>
-        </q-item>
-
+              <q-item-section>
+                {{ item.title }}
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-expansion-item>
       </q-list>
-    </q-expansion-item>
+    </q-scroll-area>
 
-    <!-- CONFIGURAÇÕES -->
-
-    <q-expansion-item
-      v-if="showSettingsMenu"
-      icon="settings"
-      label="CONFIGURAÇÕES"
-      default-opened
-      header-class="menu-group"
-    >
-      <q-list class="submenu">
-
-        <q-item
-          v-if="hasPermission('users.menu')"
-          clickable
-          to="/app/settings/users"
-          class="submenu-item"
-        >
-          <q-item-section avatar>
-            <q-icon
-              name="people"
-              size="18px"
-            />
-          </q-item-section>
-
-          <q-item-section>
-            Usuários
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="hasPermission('departments.menu')"
-          clickable
-          to="/app/settings/departments"
-          class="submenu-item"
-        >
-          <q-item-section avatar>
-            <q-icon
-              name="business"
-              size="18px"
-            />
-          </q-item-section>
-
-          <q-item-section>
-            Setores
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="hasPermission('roles.menu')"
-          clickable
-          to="/app/settings/roles"
-          class="submenu-item"
-        >
-          <q-item-section avatar>
-            <q-icon
-              name="admin_panel_settings"
-              size="18px"
-            />
-          </q-item-section>
-
-          <q-item-section>
-            Tipos de Usuários
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="hasPermission('logs.menu')"
-          clickable
-          to="/app/settings/logs"
-          class="submenu-item"
-        >
-          <q-item-section avatar>
-            <q-icon
-              name="history"
-              size="18px"
-            />
-          </q-item-section>
-
-          <q-item-section>
-            Logs
-          </q-item-section>
-        </q-item>
-
-      </q-list>
-    </q-expansion-item>
-
-  </q-list>
-</q-scroll-area>
-
-<div
-  class="q-mini-drawer-hide absolute"
-  style="top: 15px; right: -17px"
->
-  <q-btn
-    dense
-    round
-    unelevated
-    color="primary"
-    icon="chevron_left"
-    @click="miniState = true"
-  />
-</div>
-
-
+    <div class="q-mini-drawer-hide absolute" style="top: 15px; right: -17px">
+      <q-btn dense round unelevated color="primary" icon="chevron_left" @click="miniState = true" />
+    </div>
   </q-drawer>
 </template>
 
 <script setup>
-import {
-  computed,
-  ref,
-} from 'vue'
+import { computed, ref } from 'vue'
 
 import usePermissions from 'src/composables/UsePermissions'
+import { SYSTEM_MODULES } from 'src/permissions/modules'
 
 const props = defineProps({
   modelValue: Boolean,
 })
 
-const emit = defineEmits([
-  'update:modelValue',
-])
+const emit = defineEmits(['update:modelValue'])
 
-const {
-  hasPermission,
-  hasAnyPermission,
-} = usePermissions()
+const { hasPermission } = usePermissions()
 
 const miniState = ref(false)
 
 const drawerModel = computed({
   get: () => props.modelValue,
-  set: value =>
-    emit(
-      'update:modelValue',
-      value,
-    ),
+  set: (value) => emit('update:modelValue', value),
 })
 
-const showPurchasesMenu =
-  computed(() =>
-    hasAnyPermission([
-      'requests.menu',
-      'analysis.menu',
-      'budget.menu',
-    ]),
-  )
+const visibleModules = computed(() =>
+  SYSTEM_MODULES.filter((module) => {
+    if (!module.showInMenu) {
+      return false
+    }
 
-const showSettingsMenu =
-  computed(() =>
-    hasAnyPermission([
-      'users.menu',
-      'departments.menu',
-      'roles.menu',
-      'logs.menu',
-    ]),
-  )
+    if (module.menuPermission) {
+      return hasPermission(module.menuPermission)
+    }
 
-const drawerClick = event => {
+    return hasPermission(`${module.key}.menu`)
+  }),
+)
+
+const dashboardItems = computed(() => visibleModules.value.filter((item) => !item.group))
+
+const groupedMenus = computed(() => {
+  const groups = {}
+
+  visibleModules.value
+    .filter((item) => item.group)
+    .forEach((item) => {
+      if (!groups[item.group]) {
+        groups[item.group] = {
+          name: item.group,
+          icon: item.group === 'CONFIGURAÇÕES' ? 'settings' : 'shopping_cart',
+          items: [],
+        }
+      }
+
+      groups[item.group].items.push(item)
+    })
+
+  Object.values(groups).forEach((group) => {
+    group.items.sort((a, b) => a.order - b.order)
+  })
+
+  return Object.values(groups)
+})
+
+const drawerClick = (event) => {
   if (miniState.value) {
     miniState.value = false
 
@@ -302,11 +133,6 @@ const drawerClick = event => {
 <style scoped>
 .bg-dark {
   background: #212529;
-}
-
-.menu-header {
-  color: white;
-  font-weight: 600;
 }
 
 .q-item {

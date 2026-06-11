@@ -4,10 +4,10 @@
       <div class="page-title">
         <div>
           <h4>
-            {{ isEditing ? 'Editar Solicitação' : 'Nova Solicitação de Compra' }}
+            {{ isEditing ? 'Editar Solicitação' : 'Nova Solicação de Compra' }}
           </h4>
 
-          <p>Preencha as informações abaixo para registrar uma solicitação.</p>
+          <p>Preencha os dados da solicitação para envio ao fluxo de orçamento e análise.</p>
         </div>
       </div>
 
@@ -17,55 +17,111 @@
             <div class="section-title">Informações da Solicitação</div>
 
             <div class="row q-col-gutter-md">
-              <div class="col-12">
-                <q-input
-                  v-model="form.produto"
-                  outlined
-                  label="Produto *"
-                  lazy-rules
-                  :rules="[(val) => !!val || 'Informe o produto']"
-                />
-              </div>
-
-              <div class="col-12 col-md-6">
-                <q-input v-model="form.solicitante" outlined disable label="Solicitante" />
-              </div>
-
-              <div class="col-12 col-md-6">
-                <q-input v-model="form.setor" outlined disable label="Setor" />
-              </div>
-
               <div class="col-12 col-md-4">
                 <q-input
-                  v-model.number="form.quantidade"
+                  v-model="form.requestNumber"
                   outlined
-                  type="number"
-                  label="Quantidade *"
-                  lazy-rules
-                  :rules="[(val) => val > 0 || 'Quantidade inválida']"
+                  disable
+                  label="Número da Solicitação"
                 />
               </div>
 
               <div class="col-12 col-md-8">
-                <div class="radio-wrapper">
-                  <div class="radio-label">Produto eletrônico? *</div>
+                <q-input
+                  v-model="form.titulo"
+                  outlined
+                  label="Título *"
+                  :rules="[(val) => !!val || 'Informe o título']"
+                />
+              </div>
 
-                  <q-option-group
-                    v-model="form.eletronico"
-                    inline
-                    type="radio"
-                    :options="[
-                      {
-                        label: 'Sim',
-                        value: 'sim',
-                      },
-                      {
-                        label: 'Não',
-                        value: 'nao',
-                      },
-                    ]"
-                  />
-                </div>
+              <div class="col-12">
+                <q-input
+                  v-model="form.descricao"
+                  outlined
+                  type="textarea"
+                  rows="4"
+                  label="Descrição *"
+                  :rules="[(val) => !!val || 'Informe a descrição']"
+                />
+              </div>
+
+              <div class="col-12 col-md-6">
+                <q-input
+                  v-model="form.categoria"
+                  outlined
+                  label="Categoria *"
+                  :rules="[(val) => !!val || 'Informe a categoria']"
+                />
+              </div>
+
+              <div class="col-12 col-md-6">
+                <q-input
+                  v-model.number="form.quantidade"
+                  outlined
+                  type="number"
+                  min="1"
+                  label="Quantidade *"
+                  :rules="[(val) => val > 0 || 'Quantidade inválida']"
+                />
+              </div>
+
+              <!-- 🆕 VALORES -->
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model.number="form.valorUnitario"
+                  outlined
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  label="Valor Unitário *"
+                  :rules="[(val) => val > 0 || 'Informe um valor válido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model.number="form.valorTotal"
+                  outlined
+                  type="number"
+                  label="Valor Total"
+                  disable
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="form.formaPagamento"
+                  outlined
+                  label="Forma de Pagamento *"
+                  :options="paymentOptions"
+                  emit-value
+                  map-options
+                  :rules="[(val) => !!val || 'Selecione a forma de pagamento']"
+                />
+              </div>
+
+              <div class="col-12">
+                <q-option-group
+                  v-model="form.isEletronico"
+                  inline
+                  :options="[
+                    { label: 'Item eletrônico', value: true },
+                    { label: 'Item não eletrônico', value: false },
+                  ]"
+                />
+              </div>
+
+              <div class="col-12">
+                <q-input
+                  v-model="form.produtoUrl"
+                  outlined
+                  label="URL do Produto"
+                  lazy-rules
+                  :rules="[
+                    (val) => (form.isEletronico ? true : !!val || 'Informe a URL do produto'),
+                  ]"
+                />
               </div>
 
               <div class="col-12">
@@ -73,80 +129,45 @@
                   v-model="form.justificativa"
                   outlined
                   type="textarea"
-                  rows="4"
+                  rows="5"
                   label="Justificativa *"
-                  lazy-rules
                   :rules="[(val) => !!val || 'Informe a justificativa']"
                 />
               </div>
+
+              <div class="col-12 col-md-6">
+                <q-input v-model="form.solicitanteNome" outlined disable label="Solicitante" />
+              </div>
+
+              <div class="col-12 col-md-6">
+                <q-input v-model="form.solicitanteEmail" outlined disable label="E-mail" />
+              </div>
+
+              <div class="col-12">
+                <q-input v-model="form.setorNome" outlined disable label="Setor" />
+              </div>
             </div>
-
-            <q-banner
-              v-if="form.eletronico === 'sim'"
-              rounded
-              class="q-mt-md bg-blue-1 text-primary"
-            >
-              <template #avatar>
-                <q-icon name="info" color="primary" />
-              </template>
-
-              Pedidos de produtos eletrônicos levam até
-              <strong>5 dias</strong>
-              para orçamento e envio para análise.
-            </q-banner>
-
-            <q-card v-if="form.eletronico === 'nao'" flat bordered class="extra-card q-mt-lg">
-              <q-card-section>
-                <div class="section-title">Informações Complementares</div>
-
-                <div class="row q-col-gutter-md q-mt-sm">
-                  <div class="col-12 col-md-4">
-                    <q-input v-model.number="form.valor" outlined type="number" label="Valor" />
-                  </div>
-
-                  <div class="col-12 col-md-4">
-                    <q-input v-model="form.pagamento" outlined label="Forma de pagamento" />
-                  </div>
-
-                  <div class="col-12 col-md-4">
-                    <q-input v-model="form.vendedor" outlined label="Vendedor" />
-                  </div>
-
-                  <div class="col-12">
-                    <q-input v-model="form.link" outlined label="Link de compra" />
-                  </div>
-                </div>
-              </q-card-section>
-            </q-card>
           </q-card-section>
 
           <q-separator />
 
           <q-card-actions align="right" class="q-pa-md">
             <q-btn
-              text-color="black"
               color="warning"
-              label="Limpar Dados"
-              icon="close"
-              no-caps
+              text-color="black"
+              icon="cleaning_services"
+              label="Limpar"
               @click="resetForm"
             />
+
             <q-space />
 
-            <q-btn
-              outline
-              color="negative"
-              label="Cancelar"
-              icon="close"
-              no-caps
-              @click="returnPage"
-            />
+            <q-btn outline color="negative" icon="close" label="Cancelar" @click="returnPage" />
 
             <q-btn
               color="positive"
-              :label="isEditing ? 'Atualizar Solicitação' : 'Salvar Solicitação'"
               icon="save"
-              no-caps
+              :label="isEditing ? 'Atualizar' : 'Salvar'"
               type="submit"
             />
           </q-card-actions>
@@ -158,86 +179,91 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-
 import { useRoute, useRouter } from 'vue-router'
 
-import useApi from 'src/composables/UseApi.js'
-import useAuthUser from 'src/composables/UseAuthUser.js'
-import useNotify from 'src/composables/UseNotify.js'
+import useAuthUser from 'src/composables/UseAuthUser'
+import useNotify from 'src/composables/UseNotify'
+import useRequests from 'src/composables/UseRequests'
+
+import { createRequestModel } from 'src/models/requestModel'
+import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 const route = useRoute()
 const router = useRouter()
 
-const api = useApi()
-
-const { profile } = useAuthUser()
-
-const { notifySuccess, notifyError, notifyWarning } = useNotify()
-
 const formRef = ref(null)
 
-const requestId = computed(() => route.params.id)
+const { profile } = useAuthUser()
+const { notifySuccess, notifyError, notifyWarning } = useNotify()
 
+const { createRequest, updateRequest, getRequestById, generateRequestNumber } = useRequests()
+
+const requestId = computed(() => route.params.id)
 const isEditing = computed(() => !!requestId.value)
 
-const form = reactive({
-  produto: '',
-  solicitante: '',
-  setor: '',
-  quantidade: 1,
-  justificativa: '',
-  eletronico: '',
-  valor: null,
-  pagamento: '',
-  vendedor: '',
-  link: '',
-})
+const form = reactive(createRequestModel())
 
+// 🆕 opções pagamento
+const paymentOptions = [
+  { label: 'Pix', value: 'pix' },
+  { label: 'Boleto', value: 'boleto' },
+  { label: 'Cartão de Crédito', value: 'credito' },
+  { label: 'Cartão de Débito', value: 'debito' },
+  { label: 'Transferência', value: 'transferencia' },
+]
+
+// 🧠 cálculo automático
 watch(
-  profile,
-  (value) => {
-    if (!value) return
-
-    form.solicitante = value.nome || ''
-
-    form.setor = value.setor || ''
-  },
-  {
-    immediate: true,
+  () => [form.quantidade, form.valorUnitario],
+  ([qtd, valor]) => {
+    const total = Number(qtd || 0) * Number(valor || 0)
+    form.valorTotal = Number(total.toFixed(2))
   },
 )
 
+// 👤 carregar usuário
+watch(
+  profile,
+  async (user) => {
+    if (!user) return
+
+    form.solicitanteId = user.userId
+    form.solicitanteNome = user.nome
+    form.solicitanteEmail = user.email
+    form.setorId = user.setorId
+    form.setorNome = user.setorNome || user.setor
+
+    if (!isEditing.value && !form.requestNumber) {
+      form.requestNumber = await generateRequestNumber()
+    }
+  },
+  { immediate: true },
+)
+
+// 📥 carregar edição
 const loadRequest = async () => {
   if (!requestId.value) return
 
-  try {
-    const data = await api.getById('compras', requestId.value)
+  const request = await getRequestById(requestId.value)
 
-    if (!data) {
-      notifyError('Solicitação não encontrada')
-
-      return
-    }
-
-    Object.assign(form, {
-      produto: data.produto || '',
-      solicitante: data.solicitante || '',
-      setor: data.setor || '',
-      quantidade: data.quantidade || 1,
-      justificativa: data.justificativa || '',
-      eletronico: data.eletronico || '',
-      valor: data.valor || null,
-      pagamento: data.pagamento || '',
-      vendedor: data.vendedor || '',
-      link: data.link || '',
-    })
-  } catch (error) {
-    notifyError('Erro ao carregar solicitação')
-
-    console.error(error)
+  if (!request) {
+    notifyError('Solicitação não encontrada')
+    router.push('/app/buy/requests')
+    return
   }
+
+  const editableStatuses = [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION]
+
+  if (!editableStatuses.includes(request.status)) {
+    notifyWarning('Esta solicitação não pode ser editada')
+    router.push('/app/buy/requests')
+    return
+  }
+
+  Object.assign(form, request)
 }
 
+// 💾 salvar
 const save = async () => {
   const valid = await formRef.value.validate()
 
@@ -246,76 +272,72 @@ const save = async () => {
     return
   }
 
+  const getStatusByType = () => {
+    return form.isEletronico ? 'Em Orçamento' : 'Em Revisão'
+  }
+
+  const payload = {
+    titulo: form.titulo,
+    descricao: form.descricao,
+    categoria: form.categoria,
+    justificativa: form.justificativa,
+    quantidade: form.quantidade,
+    produtoUrl: form.produtoUrl,
+    isEletronico: form.isEletronico,
+
+    valorUnitario: form.valorUnitario,
+    valorTotal: form.valorTotal,
+    formaPagamento: form.formaPagamento,
+
+    solicitanteId: form.solicitanteId,
+    solicitanteNome: form.solicitanteNome,
+    solicitanteEmail: form.solicitanteEmail,
+    setorId: form.setorId,
+    setorNome: form.setorNome,
+
+    requestNumber: form.requestNumber,
+
+    // 🔥 AQUI está a correção
+    status: getStatusByType(),
+  }
+
   try {
-    const payload = {
-      produto: form.produto,
-      solicitante: form.solicitante,
-      setor: form.setor,
-      quantidade: form.quantidade,
-      justificativa: form.justificativa,
-      eletronico: form.eletronico,
-    }
-
-    if (form.eletronico === 'sim') {
-      payload.status = 'Em orçamento'
-
-      payload.etapa = 2
-
-      payload.valor = null
-      payload.pagamento = null
-      payload.vendedor = null
-      payload.link = null
-    } else {
-      payload.status = 'Pendente análise'
-
-      payload.etapa = 3
-
-      payload.valor = form.valor
-
-      payload.pagamento = form.pagamento
-
-      payload.vendedor = form.vendedor
-
-      payload.link = form.link
-    }
-
     if (isEditing.value) {
-      await api.update('compras', requestId.value, payload)
-
-      notifySuccess('Solicitação atualizada com sucesso!')
-      router.push('/app/buy/requests')
+      await updateRequest(requestId.value, payload)
+      notifySuccess('Atualizado com sucesso')
     } else {
-      await api.post('compras', payload)
-
-      notifySuccess('Solicitação registrada com sucesso!')
-      router.push('/app/buy/requests')
+      await createRequest({
+        requestData: payload,
+        user: profile.value,
+      })
+      notifySuccess('Criado com sucesso')
     }
-  } catch (error) {
-    console.error(error)
 
-    notifyError('Erro ao salvar solicitação')
+    router.push('/app/buy/requests')
+  } catch {
+    notifyError('Erro ao salvar')
   }
 }
 
+// 🧹 reset
 const resetForm = () => {
-  form.produto = ''
-  form.quantidade = 1
+  form.titulo = ''
+  form.descricao = ''
+  form.categoria = ''
   form.justificativa = ''
-  form.eletronico = ''
-
-  form.valor = null
-  form.pagamento = ''
-  form.vendedor = ''
-  form.link = ''
+  form.quantidade = 1
+  form.valorUnitario = 0
+  form.valorTotal = 0
+  form.formaPagamento = null
+  form.isEletronico = false
+  form.produtoUrl = ''
 }
 
 const returnPage = () => {
   router.push('/app/buy/requests')
 }
 
-onMounted(() => {
-  loadRequest()
-})
+onMounted(loadRequest)
 </script>
 
 <style scoped>
@@ -330,60 +352,17 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-.page-title {
-  margin-bottom: 20px;
-}
-
 .page-title h4 {
   margin: 0;
   font-weight: 600;
-  color: #2d3748;
-}
-
-.page-title p {
-  margin-top: 4px;
-  color: #718096;
 }
 
 .request-card {
   border-radius: 12px;
-  background: #ffffff;
 }
 
 .section-title {
-  font-size: 16px;
   font-weight: 600;
-  color: #2d3748;
   margin-bottom: 20px;
 }
-
-.radio-wrapper {
-  padding-top: 4px;
-}
-
-.radio-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #4a5568;
-  margin-bottom: 8px;
-}
-
-.extra-card {
-  background: #fafafa;
-  border-radius: 10px;
-}
-
-:deep(.q-field--outlined .q-field__control) {
-  border-radius: 8px;
-}
-
-:deep(.q-btn) {
-  border-radius: 8px;
-  font-weight: 600;
-}
-
-:deep(.q-field__label) {
-  font-weight: 500;
-}
 </style>
-```

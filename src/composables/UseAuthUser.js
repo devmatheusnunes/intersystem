@@ -63,8 +63,6 @@ const loadUserProfile = async (uid) => {
 
       visibleSectors: roleData?.visibleSectors || [],
     }
-
-    console.log('PROFILE:', profile.value)
   } catch (error) {
     console.error('Erro ao carregar perfil:', error)
 

@@ -1,4 +1,3 @@
-```vue
 <template>
   <q-page class="page-container">
     <!-- KPIs -->
@@ -17,9 +16,9 @@
       <div class="col-12 col-sm-6 col-md-3">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
-            <div class="text-caption text-grey-7">Pendentes</div>
+            <div class="text-caption text-grey-7">Em Revisão</div>
             <div class="text-h4 text-warning text-weight-bold">
-              {{ stats.pendentes }}
+              {{ stats.revisao }}
             </div>
           </q-card-section>
         </q-card>
@@ -29,7 +28,6 @@
         <q-card flat bordered class="kpi-card">
           <q-card-section>
             <div class="text-caption text-grey-7">Em orçamento</div>
-
             <div class="text-h4 text-info text-weight-bold">
               {{ stats.orcamento }}
             </div>
@@ -40,10 +38,9 @@
       <div class="col-12 col-sm-6 col-md-3">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
-            <div class="text-caption text-grey-7">Deferidas</div>
-
+            <div class="text-caption text-grey-7">Pendente Análise</div>
             <div class="text-h4 text-positive text-weight-bold">
-              {{ stats.deferidos }}
+              {{ stats.analise }}
             </div>
           </q-card-section>
         </q-card>
@@ -60,6 +57,7 @@
         :loading="loading"
         :pagination="{ rowsPerPage: 10 }"
       >
+        <!-- Top -->
         <template #top>
           <div class="row items-center full-width q-gutter-md">
             <div>
@@ -94,24 +92,24 @@
           </div>
         </template>
 
-        <!-- Produto -->
-        <template #body-cell-produto="props">
+        <!-- Produto + Solicitante -->
+        <template #body-cell-titulo="props">
           <q-td :props="props">
             <div class="text-weight-medium">
-              {{ props.row.produto }}
+              {{ props.row.titulo }}
             </div>
 
             <div class="text-caption text-grey-7">
-              {{ props.row.solicitante }}
+              {{ props.row.solicitanteNome }}
             </div>
           </q-td>
         </template>
 
         <!-- Valor -->
-        <template #body-cell-valor="props">
+        <template #body-cell-valorTotal="props">
           <q-td :props="props">
             {{
-              Number(props.row.valor || 0).toLocaleString('pt-BR', {
+              Number(props.row.valorTotal || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
               })
@@ -119,12 +117,19 @@
           </q-td>
         </template>
 
+        <!-- Setor -->
+        <template #body-cell-setorNome="props">
+          <q-td :props="props">
+            {{ props.row.setorNome }}
+          </q-td>
+        </template>
+
         <!-- Status -->
         <template #body-cell-status="props">
           <q-td :props="props">
             <q-chip
-              v-if="props.row.status === 'Pendente análise'"
-              color="warning"
+              v-if="props.row.status === 'Pendente Análise'"
+              color="yellow-8"
               text-color="black"
               icon="hourglass_top"
             >
@@ -132,30 +137,21 @@
             </q-chip>
 
             <q-chip
-              v-else-if="props.row.status === 'Em orçamento'"
-              color="info"
+              v-else-if="props.row.status === 'Em Orçamento'"
+              color="blue-5"
               text-color="white"
-              icon="request_quote"
+              icon="request_page"
             >
               Em orçamento
             </q-chip>
 
             <q-chip
-              v-else-if="props.row.status === 'Deferido'"
-              color="positive"
+              v-else-if="props.row.status === 'Em Revisão'"
+              color="orange-10"
               text-color="white"
-              icon="check_circle"
+              icon="grading"
             >
-              Deferido
-            </q-chip>
-
-            <q-chip
-              v-else-if="props.row.status === 'Indeferido'"
-              color="negative"
-              text-color="white"
-              icon="cancel"
-            >
-              Indeferido
+              Em Revisão
             </q-chip>
 
             <q-chip v-else color="grey" text-color="white">
@@ -174,7 +170,7 @@
         <!-- Ações -->
         <template #body-cell-actions="props">
           <q-td :props="props">
-            <q-btn flat round color="primary" icon="visibility" @click="viewRequest(props.row)">
+            <q-btn flat round color="primary" icon="visibility" @click="openDetails(props.row)">
               <q-tooltip>Visualizar</q-tooltip>
             </q-btn>
 
@@ -202,6 +198,7 @@
           </q-td>
         </template>
 
+        <!-- No data -->
         <template #no-data>
           <div class="full-width row flex-center q-pa-xl text-grey">
             <q-icon name="inventory_2" size="40px" class="q-mr-sm" />
@@ -210,42 +207,72 @@
         </template>
       </q-table>
     </q-card>
-
-    <!-- Modal -->
     <q-dialog v-model="detailsDialog">
-      <q-card style="min-width: 800px; max-width: 1000px">
+      <q-card style="min-width: 850px; max-width: 1000px; border-radius: 14px">
+        <!-- HEADER -->
         <q-card-section class="bg-primary text-white">
-          <div class="text-h6">Detalhes da Solicitação</div>
+          <div class="row items-center">
+            <div>
+              <div class="text-subtitle2">Solicitação</div>
+              <div class="text-h6 text-weight-bold">
+                {{ selectedRequest?.requestNumber }}
+              </div>
+            </div>
+
+            <q-space />
+
+            <q-chip :color="getStatusColor(selectedRequest?.status)" text-color="white" dense>
+              {{ selectedRequest?.status }}
+            </q-chip>
+          </div>
         </q-card-section>
 
+        <!-- CONTEÚDO -->
         <q-card-section class="q-pa-lg">
           <div class="row q-col-gutter-lg">
+            <!-- Produto -->
             <div class="col-12">
-              <div class="field-label">ID</div>
-              <div class="field-value uid-text">
-                {{ selectedRequest?.id }}
+              <div class="text-subtitle1 text-weight-medium">
+                {{ selectedRequest?.titulo }}
               </div>
             </div>
 
-            <div class="col-6">
-              <div class="field-label">Produto</div>
+            <!-- Info principais -->
+            <div class="col-4">
+              <div class="field-label">Solicitante</div>
               <div class="field-value">
-                {{ selectedRequest?.produto }}
+                {{ selectedRequest?.solicitanteNome }}
               </div>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
+              <div class="field-label">Setor</div>
+              <div class="field-value">
+                {{ selectedRequest?.setorNome }}
+              </div>
+            </div>
+
+            <div class="col-4">
+              <div class="field-label">Data</div>
+              <div class="field-value">
+                {{ formatDate(selectedRequest?.createdAt) }}
+              </div>
+            </div>
+
+            <!-- Quantidade -->
+            <div class="col-4">
               <div class="field-label">Quantidade</div>
               <div class="field-value">
                 {{ selectedRequest?.quantidade }}
               </div>
             </div>
 
-            <div class="col-6">
-              <div class="field-label">Valor</div>
-              <div class="field-value">
+            <!-- Valor -->
+            <div class="col-4">
+              <div class="field-label">Valor Total</div>
+              <div class="field-value text-primary text-weight-bold">
                 {{
-                  Number(selectedRequest?.valor || 0).toLocaleString('pt-BR', {
+                  Number(selectedRequest?.valorTotal || 0).toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
                   })
@@ -253,83 +280,24 @@
               </div>
             </div>
 
-            <div class="col-6">
-              <div class="field-label">Pagamento</div>
-              <div class="field-value">
-                {{ selectedRequest?.pagamento }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Vendedor</div>
-              <div class="field-value">
-                {{ selectedRequest?.vendedor }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Link</div>
-
-              <a :href="selectedRequest?.link" target="_blank" class="text-primary">
-                Abrir produto
+            <!-- Link -->
+            <div class="col-4">
+              <div class="field-label">Produto</div>
+              <a
+                :href="formatUrl(selectedRequest?.produtoUrl)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary text-weight-medium"
+              >
+                Abrir link
               </a>
             </div>
 
-            <div class="col-6">
-              <div class="field-label">Solicitante</div>
-              <div class="field-value">
-                {{ selectedRequest?.solicitante }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Setor</div>
-              <div class="field-value">
-                {{ selectedRequest?.setor }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Status</div>
-              <div class="field-value">
-                {{ selectedRequest?.status }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Etapa</div>
-              <div class="field-value">
-                {{ selectedRequest?.etapa }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Eletrônico</div>
-              <div class="field-value">
-                {{ selectedRequest?.eletronico === 'sim' ? 'Sim' : 'Não' }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Data de Criação</div>
-
-              <div class="field-value">
-                {{ formatDate(selectedRequest?.createdAt) }}
-              </div>
-            </div>
-
-            <div class="col-6">
-              <div class="field-label">Última Atualização</div>
-
-              <div class="field-value">
-                {{ formatDate(selectedRequest?.updatedAt) }}
-              </div>
-            </div>
-
+            <!-- Justificativa -->
             <div class="col-12">
               <div class="field-label">Justificativa</div>
 
-              <q-card flat bordered>
+              <q-card flat bordered class="bg-grey-1">
                 <q-card-section>
                   {{ selectedRequest?.justificativa }}
                 </q-card-section>
@@ -338,7 +306,8 @@
           </div>
         </q-card-section>
 
-        <q-card-actions align="right">
+        <!-- FOOTER -->
+        <q-card-actions align="right" class="q-pa-md">
           <q-btn flat label="Fechar" color="primary" v-close-popup />
         </q-card-actions>
       </q-card>
@@ -351,17 +320,16 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Dialog } from 'quasar'
 
-import useApi from 'src/composables/UseApi.js'
-import useAuthUser from 'src/composables/UseAuthUser.js'
-import useNotify from 'src/composables/UseNotify.js'
+import useNotify from 'src/composables/UseNotify'
+import useRequests from 'src/composables/UseRequests'
+import usePermissions from 'src/composables/UsePermissions'
 
 const router = useRouter()
 
-const api = useApi()
-
-const { user, profile } = useAuthUser()
-
 const { notifyError, notifySuccess } = useNotify()
+const { canViewItem, can } = usePermissions()
+
+const { getRequests, deleteRequest } = useRequests()
 
 const loading = ref(false)
 const rows = ref([])
@@ -371,58 +339,26 @@ const detailsDialog = ref(false)
 const selectedRequest = ref(null)
 
 const columns = [
-  {
-    name: 'produto',
-    label: 'Produto',
-    field: 'produto',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'valor',
-    label: 'Valor',
-    field: 'valor',
-    align: 'right',
-    sortable: true,
-  },
-  {
-    name: 'solicitante',
-    label: 'Solicitante',
-    field: 'solicitante',
-    sortable: true,
-  },
-  {
-    name: 'status',
-    label: 'Status',
-    field: 'status',
-    align: 'center',
-  },
-  {
-    name: 'createdAt',
-    label: 'Data',
-    field: 'createdAt',
-    align: 'center',
-  },
-  {
-    name: 'actions',
-    label: 'Ações',
-    field: 'actions',
-    align: 'center',
-  },
+  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
+  { name: 'valorTotal', label: 'Valor', field: 'valorTotal', align: 'right', sortable: true },
+  { name: 'setorNome', label: 'Setor', field: 'setorNome', sortable: true },
+  { name: 'status', label: 'Status', field: 'status', align: 'center' },
+  { name: 'createdAt', label: 'Data', field: 'createdAt', align: 'center' },
+  { name: 'actions', label: 'Ações', field: 'actions', align: 'center' },
 ]
 
 const stats = computed(() => ({
   total: rows.value.length,
-  pendentes: rows.value.filter((item) => item.status === 'Pendente análise').length,
-  orcamento: rows.value.filter((item) => item.status === 'Em orçamento').length,
-  deferidos: rows.value.filter((item) => item.status === 'Deferido').length,
+  revisao: rows.value.filter((i) => i.status === 'Em Revisão').length,
+  orcamento: rows.value.filter((i) => i.status === 'Em Orçamento').length,
+  analise: rows.value.filter((i) => i.status === 'Pendente Análise').length,
 }))
 
 const filteredRows = computed(() => {
   if (!search.value) return rows.value
 
   return rows.value.filter((item) =>
-    item.produto?.toLowerCase().includes(search.value.toLowerCase()),
+    item.titulo?.toLowerCase().includes(search.value.toLowerCase()),
   )
 })
 
@@ -430,24 +366,23 @@ const loadRequests = async () => {
   loading.value = true
 
   try {
-    const data = await api.list('compras')
+    const data = await getRequests()
 
-    if (profile.value?.role === 'admin') {
-      rows.value = data
-      return
-    }
+    const allowedStatuses = ['Em Orçamento', 'Em Revisão', 'Pendente Análise']
 
-    if (profile.value?.role === 'gestor') {
-      rows.value = data.filter((item) => item.setor === profile.value.setor)
-      return
-    }
-
-    rows.value = data.filter((item) => item.userId === user.value?.uid)
+    rows.value = data
+      .filter((item) => canViewItem(item))
+      .filter((item) => allowedStatuses.includes(item.status))
   } catch {
     notifyError('Erro ao carregar solicitações')
   } finally {
     loading.value = false
   }
+}
+
+const openDetails = (row) => {
+  selectedRequest.value = row
+  detailsDialog.value = true
 }
 
 const goToNewRequest = () => {
@@ -458,25 +393,12 @@ const editRequest = (id) => {
   router.push(`/app/buy/edit-request/${id}`)
 }
 
-const viewRequest = (row) => {
-  selectedRequest.value = row
-  detailsDialog.value = true
+const canEdit = (row) => {
+  return can('requests.edit') && ['Em Orçamento', 'Em Revisão'].includes(row.status)
 }
 
-const canEdit = (row) => row.status === 'Pendente análise'
-
-const canDelete = (row) => row.status === 'Pendente análise'
-
-const deleteRequest = async (row) => {
-  try {
-    await api.remove('compras', row.id)
-
-    rows.value = rows.value.filter((item) => item.id !== row.id)
-
-    notifySuccess('Solicitação excluída com sucesso')
-  } catch {
-    notifyError('Erro ao excluir solicitação')
-  }
+const canDelete = (row) => {
+  return can('requests.delete') && ['Em Orçamento', 'Em Revisão'].includes(row.status)
 }
 
 const confirmDelete = (row) => {
@@ -485,8 +407,16 @@ const confirmDelete = (row) => {
     message: 'Deseja realmente excluir esta solicitação?',
     cancel: true,
     persistent: true,
-  }).onOk(() => {
-    deleteRequest(row)
+  }).onOk(async () => {
+    try {
+      await deleteRequest(row.id)
+
+      rows.value = rows.value.filter((item) => item.id !== row.id)
+
+      notifySuccess('Solicitação excluída com sucesso')
+    } catch {
+      notifyError('Erro ao excluir solicitação')
+    }
   })
 }
 
@@ -495,11 +425,35 @@ const formatDate = (date) => {
 
   try {
     const value = date?.toDate ? date.toDate() : new Date(date)
-
     return value.toLocaleDateString('pt-BR')
   } catch {
     return '-'
   }
+}
+
+const getStatusColor = (status) => {
+  const map = {
+    'Em Orçamento': 'blue-5',
+    'Em Revisão': 'orange-10',
+    'Pendente Análise': 'yellow-8',
+    Deferido: 'green',
+    Indeferido: 'red',
+    'Em Espera': 'orange',
+  }
+
+  return map[status] || 'grey'
+}
+
+const formatUrl = (url) => {
+  if (!url) return '#'
+
+  // já tem http ou https
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+
+  // adiciona https automaticamente
+  return `https://${url}`
 }
 
 onMounted(loadRequests)
@@ -566,4 +520,3 @@ onMounted(loadRequests)
   word-break: break-all;
 }
 </style>
-```

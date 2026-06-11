@@ -1,0 +1,32 @@
+export const REQUEST_STATUS = {
+  BUDGET: 'Em Orçamento',
+
+  REVISION: 'Em Revisão',
+
+  PENDING_ANALYSIS: 'Pendente Análise',
+
+  APPROVED: 'Deferido',
+
+  REJECTED: 'Indeferido',
+
+  WAITING: 'Em Espera',
+
+  FINISHED: 'Finalizado'
+}
+
+export const REQUEST_STATUS_OPTIONS = [
+  REQUEST_STATUS.BUDGET,
+
+  REQUEST_STATUS.REVISION,
+
+  REQUEST_STATUS.PENDING_ANALYSIS,
+
+  REQUEST_STATUS.APPROVED,
+
+  REQUEST_STATUS.REJECTED,
+
+  REQUEST_STATUS.WAITING,
+
+  REQUEST_STATUS.FINISHED
+]
+

@@ -1,185 +1,155 @@
 export const SYSTEM_MODULES = [
   {
+    group: null,
+    key: 'dashboard',
     title: 'Dashboard',
+    icon: 'dashboard',
+    route: '/app',
+    showInMenu: true,
+    order: 1,
     permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'dashboard.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'dashboard.view',
-      },
+      { label: 'Exibir Menu', value: 'dashboard.menu' },
+      { label: 'Visualizar', value: 'dashboard.view' },
     ],
   },
 
   {
+    group: 'COMPRAS',
+    key: 'requests',
     title: 'Solicitações',
+    icon: 'description',
+    route: '/app/buy/requests',
+    showInMenu: true,
+    order: 10,
     permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'requests.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'requests.view',
-      },
-      {
-        label: 'Criar',
-        value: 'requests.create',
-      },
-      {
-        label: 'Editar',
-        value: 'requests.edit',
-      },
-      {
-        label: 'Excluir',
-        value: 'requests.delete',
-      },
+      { label: 'Exibir Menu', value: 'requests.menu' },
+      { label: 'Visualizar', value: 'requests.view' },
+      { label: 'Criar', value: 'requests.create' },
+      { label: 'Editar', value: 'requests.edit' },
+      { label: 'Excluir', value: 'requests.delete' },
     ],
   },
 
   {
-    title: 'Análises',
-    permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'analysis.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'analysis.view',
-      },
-      {
-        label: 'Deferir',
-        value: 'analysis.defer',
-      },
-      {
-        label: 'Indeferir',
-        value: 'analysis.indefer',
-      },
-      {
-        label: 'Em Espera',
-        value: 'analysis.wait',
-      },
-      {
-        label: 'Enviar p/ Orçamento',
-        value: 'analysis.send_budget',
-      },
-    ],
+    group: 'COMPRAS',
+    key: 'history',
+    title: 'Histórico',
+    icon: 'history',
+    route: '/app/buy/history',
+    showInMenu: true,
+    order: 11,
+    menuPermission: 'requests.menu',
+    permissions: [],
   },
 
   {
+    group: 'COMPRAS',
+    key: 'budget',
     title: 'Orçamentos',
+    icon: 'request_quote',
+    route: '/app/buy/budget',
+    showInMenu: true,
+    order: 12,
     permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'budget.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'budget.view',
-      },
-      {
-        label: 'Editar',
-        value: 'budget.edit',
-      },
-      {
-        label: 'Finalizar',
-        value: 'budget.finish',
-      },
+      { label: 'Exibir Menu', value: 'budget.menu' },
+      { label: 'Visualizar', value: 'budget.view' },
+      { label: 'Editar', value: 'budget.edit' },
+      { label: 'Finalizar', value: 'budget.finish' },
     ],
   },
 
   {
+    group: 'COMPRAS',
+    key: 'analysis',
+    title: 'Análise',
+    icon: 'analytics',
+    route: '/app/buy/analysis',
+    showInMenu: true,
+    order: 13,
+    permissions: [
+      { label: 'Exibir Menu', value: 'analysis.menu' },
+      { label: 'Visualizar', value: 'analysis.view' },
+      { label: 'Deferir', value: 'analysis.defer' },
+      { label: 'Indeferir', value: 'analysis.indefer' },
+      { label: 'Em Espera', value: 'analysis.wait' },
+      { label: 'Enviar p/ Orçamento', value: 'analysis.send_budget' },
+    ],
+  },
+
+  {
+    group: 'COMPRAS',
+    key: 'payment',
+    title: 'Pagamentos',
+    icon: 'payment',
+    route: '/app/buy/payment',
+    showInMenu: true,
+    order: 14,
+    menuPermission: 'budget.finish',
+    permissions: [],
+  },
+
+  {
+    group: 'CONFIGURAÇÕES',
+    key: 'users',
     title: 'Usuários',
+    icon: 'people',
+    route: '/app/settings/users',
+    showInMenu: true,
+    order: 90,
     permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'users.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'users.view',
-      },
-      {
-        label: 'Criar',
-        value: 'users.create',
-      },
-      {
-        label: 'Editar',
-        value: 'users.edit',
-      },
-      {
-        label: 'Excluir',
-        value: 'users.delete',
-      },
+      { label: 'Exibir Menu', value: 'users.menu' },
+      { label: 'Visualizar', value: 'users.view' },
+      { label: 'Criar', value: 'users.create' },
+      { label: 'Editar', value: 'users.edit' },
+      { label: 'Excluir', value: 'users.delete' },
     ],
   },
 
   {
+    group: 'CONFIGURAÇÕES',
+    key: 'departments',
     title: 'Setores',
+    icon: 'business',
+    route: '/app/settings/departments',
+    showInMenu: true,
+    order: 91,
     permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'departments.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'departments.view',
-      },
-      {
-        label: 'Criar',
-        value: 'departments.create',
-      },
-      {
-        label: 'Editar',
-        value: 'departments.edit',
-      },
-      {
-        label: 'Excluir',
-        value: 'departments.delete',
-      },
+      { label: 'Exibir Menu', value: 'departments.menu' },
+      { label: 'Visualizar', value: 'departments.view' },
+      { label: 'Criar', value: 'departments.create' },
+      { label: 'Editar', value: 'departments.edit' },
+      { label: 'Excluir', value: 'departments.delete' },
     ],
   },
 
   {
-    title: 'Tipos de Usuários',
+    group: 'CONFIGURAÇÕES',
+    key: 'roles',
+    title: 'Tipos de Usuário',
+    icon: 'admin_panel_settings',
+    route: '/app/settings/roles',
+    showInMenu: true,
+    order: 92,
     permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'roles.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'roles.view',
-      },
-      {
-        label: 'Criar',
-        value: 'roles.create',
-      },
-      {
-        label: 'Editar',
-        value: 'roles.edit',
-      },
-      {
-        label: 'Excluir',
-        value: 'roles.delete',
-      },
+      { label: 'Exibir Menu', value: 'roles.menu' },
+      { label: 'Visualizar', value: 'roles.view' },
+      { label: 'Criar', value: 'roles.create' },
+      { label: 'Editar', value: 'roles.edit' },
+      { label: 'Excluir', value: 'roles.delete' },
     ],
   },
 
   {
+    group: 'CONFIGURAÇÕES',
+    key: 'logs',
     title: 'Logs',
+    icon: 'history',
+    route: '/app/settings/logs',
+    showInMenu: true,
+    order: 99,
     permissions: [
-      {
-        label: 'Exibir Menu',
-        value: 'logs.menu',
-      },
-      {
-        label: 'Visualizar',
-        value: 'logs.view',
-      },
+      { label: 'Exibir Menu', value: 'logs.menu' },
+      { label: 'Visualizar', value: 'logs.view' },
     ],
   },
 ]
