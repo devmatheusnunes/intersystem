@@ -17,6 +17,7 @@ const routes = [
     meta: {
       requiresAuth: true,
     },
+
     children: [
       {
         path: '',
@@ -27,49 +28,9 @@ const routes = [
         },
       },
 
-
-      // =========================
-      // ANÁLISE
-      // =========================
-
-      {
-        path: 'buy/analysis',
-        name: 'buy-analysis',
-        component: () => import('pages/buy/AnalysisPage.vue'),
-        meta: {
-          permission: 'analysis.view',
-        },
-      },
-
-      // =========================
-      // ORÇAMENTOS
-      // =========================
-
-      {
-        path: 'buy/budget',
-        name: 'buy-budget',
-        component: () => import('pages/buy/BudgetPage.vue'),
-        meta: {
-          permission: 'budget.view',
-        },
-      },
-
-      // =========================
-      // HISTÓRICO
-      // =========================
-
-      {
-        path: 'buy/history',
-        name: 'buy-history',
-        component: () => import('pages/buy/HistoryPage.vue'),
-        meta: {
-          permission: 'requests.view',
-        },
-      },
-
-      // =========================
-      // SOLICITAÇÕES
-      // =========================
+      // =====================
+      // COMPRAS
+      // =====================
 
       {
         path: 'buy/requests',
@@ -98,9 +59,50 @@ const routes = [
         },
       },
 
-      // =========================
-      // PAGAMENTOS
-      // =========================
+      {
+        path: 'buy/details/:id?',
+        name: 'buy-details',
+        component: () => import('pages/buy/DetailsPage.vue'),
+        meta: {
+          permission: 'requests.view',
+        },
+      },
+
+      {
+        path: 'buy/history',
+        name: 'buy-history',
+        component: () => import('pages/buy/HistoryPage.vue'),
+        meta: {
+          permission: 'requests.view',
+        },
+      },
+
+      {
+        path: 'buy/budget',
+        name: 'buy-budget',
+        component: () => import('pages/buy/BudgetPage.vue'),
+        meta: {
+          permission: 'budget.view',
+        },
+      },
+
+      {
+        path: 'buy/revision',
+        name: 'buy-revision',
+        component: () => import('pages/buy/RevisionPage.vue'),
+        meta: {
+          permission: 'revision.view',
+        },
+      },
+
+      {
+        path: 'buy/analysis',
+        name: 'buy-analysis',
+        component: () => import('pages/buy/AnalysisPage.vue'),
+        meta: {
+          permission: 'analysis.view',
+        },
+      },
 
       {
         path: 'buy/payment',
@@ -111,9 +113,36 @@ const routes = [
         },
       },
 
-      // =========================
-      // SETORES
-      // =========================
+      // =====================
+      // CONFIGURAÇÕES
+      // =====================
+
+      {
+        path: 'settings/users',
+        name: 'settings-users',
+        component: () => import('pages/settings/UsersPage.vue'),
+        meta: {
+          permission: 'users.view',
+        },
+      },
+
+      {
+        path: 'settings/new-perfil',
+        name: 'settings-new-perfil',
+        component: () => import('pages/settings/PerfilPage.vue'),
+        meta: {
+          permission: 'users.create',
+        },
+      },
+
+      {
+        path: 'settings/edit-perfil/:id?',
+        name: 'settings-edit-perfil',
+        component: () => import('pages/settings/PerfilPage.vue'),
+        meta: {
+          permission: 'users.edit',
+        },
+      },
 
       {
         path: 'settings/departments',
@@ -123,23 +152,6 @@ const routes = [
           permission: 'departments.view',
         },
       },
-
-      // =========================
-      // LOGS
-      // =========================
-
-      {
-        path: 'settings/logs',
-        name: 'settings-logs',
-        component: () => import('pages/settings/LogsPage.vue'),
-        meta: {
-          permission: 'logs.view',
-        },
-      },
-
-      // =========================
-      // TIPOS DE USUÁRIO
-      // =========================
 
       {
         path: 'settings/roles',
@@ -168,39 +180,15 @@ const routes = [
         },
       },
 
-      // =========================
-      // USUÁRIOS
-      // =========================
-
       {
-        path: 'settings/users',
-        name: 'settings-users',
-        component: () => import('pages/settings/UsersPage.vue'),
+        path: 'settings/logs',
+        name: 'settings-logs',
+        component: () => import('pages/settings/LogsPage.vue'),
         meta: {
-          permission: 'users.view',
-        },
-      },
-
-      {
-        path: 'settings/new-perfil',
-        name: 'settings-new-perfil',
-        component: () => import('pages/settings/PerfilPage.vue'),
-        meta: {
-          permission: 'users.create',
-        },
-      },
-
-      {
-        path: 'settings/edit-perfil/:id?',
-        name: 'settings-edit-perfil',
-        component: () => import('pages/settings/PerfilPage.vue'),
-        meta: {
-          permission: 'users.edit',
+          permission: 'logs.view',
         },
       },
     ],
-
-
   },
 
   {

@@ -12,6 +12,12 @@ export default function useRequests() {
 
   const COLLECTION = 'requestsbuy'
 
+  const getUserId = (user) => user?.userId || user?.uid || ''
+
+  const getUserName = (user) => user?.nome || user?.displayName || user?.email || 'Usuário'
+
+  const getUserEmail = (user) => user?.email || ''
+
   const generateRequestNumber = async () => {
     const snapshot = await getDocs(collection(db, COLLECTION))
 
@@ -22,8 +28,8 @@ export default function useRequests() {
 
   const createHistoryEntry = (status, usuarioId, usuarioNome, observacao = '') => ({
     status,
-    usuarioId,
-    usuarioNome,
+    usuarioId: usuarioId || '',
+    usuarioNome: usuarioNome || '',
     observacao,
     data: new Date(),
   })
@@ -68,17 +74,19 @@ export default function useRequests() {
 
       status: initialStatus,
 
-      solicitanteId: user.userId,
+      solicitanteId: getUserId(user),
 
-      solicitanteNome: user.nome,
+      solicitanteNome: getUserName(user),
 
-      solicitanteEmail: user.email,
+      solicitanteEmail: getUserEmail(user),
 
       createdAt: new Date(),
 
       updatedAt: new Date(),
 
-      historico: [createHistoryEntry(initialStatus, user.userId, user.nome, 'Solicitação criada')],
+      historico: [
+        createHistoryEntry(initialStatus, getUserId(user), getUserName(user), 'Solicitação criada'),
+      ],
     }
 
     return await api.post(COLLECTION, payload)
@@ -99,7 +107,7 @@ export default function useRequests() {
     const historico = [
       ...(request.historico || []),
 
-      createHistoryEntry(newStatus, user.userId, user.nome, observacao),
+      createHistoryEntry(newStatus, getUserId(user), getUserName(user), observacao),
     ]
 
     return await updateRequest(request.id, {
@@ -125,11 +133,19 @@ export default function useRequests() {
         analise: {
           decisao: REQUEST_STATUS.APPROVED,
 
+          analyzedAt: new Date(),
+
+          analyzedBy: getUserId(user),
+
+          analyzedByName: getUserName(user),
+
+          analysisObservation: observacao,
+
           observacao,
 
-          usuarioId: user.userId,
+          usuarioId: getUserId(user),
 
-          usuarioNome: user.nome,
+          usuarioNome: getUserName(user),
 
           data: new Date(),
         },
@@ -150,14 +166,22 @@ export default function useRequests() {
       extraData: {
         jaFoiIndeferido: true,
 
+        analyzedAt: new Date(),
+
+        analyzedBy: getUserId(user),
+
+        analyzedByName: getUserName(user),
+
+        analysisObservation: observacao,
+
         analise: {
           decisao: REQUEST_STATUS.REJECTED,
 
           observacao,
 
-          usuarioId: user.userId,
+          usuarioId: getUserId(user),
 
-          usuarioNome: user.nome,
+          usuarioNome: getUserName(user),
 
           data: new Date(),
         },
@@ -174,6 +198,16 @@ export default function useRequests() {
       user,
 
       observacao,
+
+      extraData: {
+        analyzedAt: new Date(),
+
+        analyzedBy: getUserId(user),
+
+        analyzedByName: getUserName(user),
+
+        analysisObservation: observacao,
+      },
     })
   }
 
@@ -205,7 +239,7 @@ export default function useRequests() {
     return await changeStatus({
       request,
 
-      newStatus: REQUEST_STATUS.PENDING_ANALYSIS,
+      newStatus: REQUEST_STATUS.REANALYSIS,
 
       user,
 
@@ -214,12 +248,16 @@ export default function useRequests() {
       extraData: {
         reanalises: (request.reanalises || 0) + 1,
 
+        reanalysisRequested: true,
+
+        reanalysisRequestedAt: new Date(),
+
         reanalise: {
           motivo,
 
-          usuarioId: user.userId,
+          usuarioId: getUserId(user),
 
-          usuarioNome: user.nome,
+          usuarioNome: getUserName(user),
 
           data: new Date(),
         },
@@ -227,11 +265,21 @@ export default function useRequests() {
     })
   }
 
-  const reinforceRequest = async ({ request }) => {
-    return await updateRequest(request.id, {
-      prioridadeAnalise: true,
+  const reinforceRequest = async ({ request, user }) => {
+    return await changeStatus({
+      request,
 
-      prioridadeData: new Date(),
+      newStatus: REQUEST_STATUS.PENDING_ANALYSIS,
+
+      user,
+
+      observacao: 'Solicitado reforço de análise',
+
+      extraData: {
+        prioridadeAnalise: true,
+
+        prioridadeData: new Date(),
+      },
     })
   }
 
@@ -253,9 +301,9 @@ export default function useRequests() {
 
           dataCompra: new Date(),
 
-          usuarioId: user.userId,
+          usuarioId: getUserId(user),
 
-          usuarioNome: user.nome,
+          usuarioNome: getUserName(user),
         },
       },
     })
@@ -264,9 +312,10 @@ export default function useRequests() {
   const duplicateRequest = async ({ request, user }) => {
     const requestNumber = await generateRequestNumber()
 
-    const initialStatus = request.isEletronico ? REQUEST_STATUS.BUDGET : REQUEST_STATUS.REVISION
+    const initialStatus = REQUEST_STATUS.REVISION
 
     const payload = {
+      originalRequestId: request.id,
       ...createRequestModel(),
 
       requestNumber,
@@ -289,7 +338,7 @@ export default function useRequests() {
 
       valorTotal: request.valorTotal,
 
-      observacoes: request.observacoes,
+      observacoes: request.observacoes || '',
 
       isEletronico: request.isEletronico,
 
@@ -297,11 +346,11 @@ export default function useRequests() {
 
       setorNome: request.setorNome,
 
-      solicitanteId: user.userId,
+      solicitanteId: getUserId(user),
 
-      solicitanteNome: user.nome,
+      solicitanteNome: getUserName(user),
 
-      solicitanteEmail: user.email,
+      solicitanteEmail: getUserEmail(user),
 
       status: initialStatus,
 
@@ -310,7 +359,12 @@ export default function useRequests() {
       updatedAt: new Date(),
 
       historico: [
-        createHistoryEntry(initialStatus, user.userId, user.nome, 'Solicitação recriada'),
+        createHistoryEntry(
+          initialStatus,
+          getUserId(user),
+          getUserName(user),
+          'Solicitação recriada',
+        ),
       ],
     }
 

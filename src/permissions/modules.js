@@ -32,29 +32,33 @@ export const SYSTEM_MODULES = [
 
   {
     group: 'COMPRAS',
-    key: 'history',
-    title: 'Histórico',
-    icon: 'history',
-    route: '/app/buy/history',
-    showInMenu: true,
-    order: 11,
-    menuPermission: 'requests.menu',
-    permissions: [],
-  },
-
-  {
-    group: 'COMPRAS',
     key: 'budget',
     title: 'Orçamentos',
     icon: 'request_quote',
     route: '/app/buy/budget',
     showInMenu: true,
-    order: 12,
+    order: 11,
     permissions: [
       { label: 'Exibir Menu', value: 'budget.menu' },
       { label: 'Visualizar', value: 'budget.view' },
       { label: 'Editar', value: 'budget.edit' },
       { label: 'Finalizar', value: 'budget.finish' },
+    ],
+  },
+
+  {
+    group: 'COMPRAS',
+    key: 'revision',
+    title: 'Revisão',
+    icon: 'grading',
+    route: '/app/buy/revision',
+    showInMenu: true,
+    order: 12,
+    permissions: [
+      { label: 'Exibir Menu', value: 'revision.menu' },
+      { label: 'Visualizar', value: 'revision.view' },
+      { label: 'Editar', value: 'revision.edit' },
+      { label: 'Enviar p/ Análise', value: 'revision.send_analysis' },
     ],
   },
 
@@ -85,6 +89,18 @@ export const SYSTEM_MODULES = [
     showInMenu: true,
     order: 14,
     menuPermission: 'budget.finish',
+    permissions: [],
+  },
+
+  {
+    group: 'COMPRAS',
+    key: 'history',
+    title: 'Histórico',
+    icon: 'history',
+    route: '/app/buy/history',
+    showInMenu: true,
+    order: 15,
+    menuPermission: 'requests.menu',
     permissions: [],
   },
 
@@ -125,7 +141,7 @@ export const SYSTEM_MODULES = [
   {
     group: 'CONFIGURAÇÕES',
     key: 'roles',
-    title: 'Tipos de Usuário',
+    title: 'Perfil de Usuário',
     icon: 'admin_panel_settings',
     route: '/app/settings/roles',
     showInMenu: true,

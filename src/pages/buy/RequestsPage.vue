@@ -323,6 +323,7 @@ import { Dialog } from 'quasar'
 import useNotify from 'src/composables/UseNotify'
 import useRequests from 'src/composables/UseRequests'
 import usePermissions from 'src/composables/UsePermissions'
+import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 const router = useRouter()
 
@@ -368,7 +369,11 @@ const loadRequests = async () => {
   try {
     const data = await getRequests()
 
-    const allowedStatuses = ['Em Orçamento', 'Em Revisão', 'Pendente Análise']
+    const allowedStatuses = [
+      REQUEST_STATUS.BUDGET,
+      REQUEST_STATUS.REVISION,
+      REQUEST_STATUS.PENDING_ANALYSIS,
+    ]
 
     rows.value = data
       .filter((item) => canViewItem(item))

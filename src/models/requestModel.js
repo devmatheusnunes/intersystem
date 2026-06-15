@@ -1,17 +1,31 @@
 export const createRequestModel = () => ({
   requestNumber: '',
 
-  // Será definido pelo createRequest()
   status: null,
 
-  // Define o fluxo da solicitação
   isEletronico: false,
 
   prioridadeAnalise: false,
 
+  prioridadeData: null,
+
   jaFoiIndeferido: false,
 
   reanalises: 0,
+
+  reanalysisRequested: false,
+
+  reanalysisRequestedAt: null,
+
+  originalRequestId: null,
+
+  analyzedAt: null,
+
+  analyzedBy: '',
+
+  analyzedByName: '',
+
+  analysisObservation: '',
 
   solicitanteId: '',
 
@@ -45,7 +59,7 @@ export const createRequestModel = () => ({
     observacao: '',
     usuarioId: '',
     usuarioNome: '',
-    data: null
+    data: null,
   },
 
   analise: {
@@ -53,21 +67,21 @@ export const createRequestModel = () => ({
     observacao: '',
     usuarioId: '',
     usuarioNome: '',
-    data: null
+    data: null,
   },
 
   reanalise: {
     motivo: '',
     usuarioId: '',
     usuarioNome: '',
-    data: null
+    data: null,
   },
 
   pagamento: {
     comprado: false,
     dataCompra: null,
     usuarioId: '',
-    usuarioNome: ''
+    usuarioNome: '',
   },
 
   comprovantes: [],
@@ -76,5 +90,5 @@ export const createRequestModel = () => ({
 
   createdAt: null,
 
-  updatedAt: null
+  updatedAt: null,
 })
