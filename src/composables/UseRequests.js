@@ -2,106 +2,118 @@ import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from 'src/boot/firebase'
 
 import useApi from 'src/composables/UseApi'
-
 import { createRequestModel } from 'src/models/requestModel'
-
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 export default function useRequests() {
   const api = useApi()
-
   const COLLECTION = 'requestsbuy'
 
-  const getUserId = (user) => {
-    return user?.id || user?.userId || user?.uid || user?._id || ''
+  /* =========================================================
+   * 🧠 HELPERS (ANTI BUG)
+   * ======================================================= */
+
+  const removeUndefined = (obj) =>
+    Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
+
+  const getUserId = (user) => user?.id || user?.userId || user?.uid || user?._id || null
+
+  const getUserName = (user) => user?.nome || user?.name || user?.displayName || 'Usuário'
+
+  const getUserEmail = (user) => user?.email || null
+
+  const now = () => new Date()
+
+  const parseDate = (value) => {
+    if (!value) return new Date(0)
+    if (typeof value?.toDate === 'function') return value.toDate()
+    const d = new Date(value)
+    return isNaN(d.getTime()) ? new Date(0) : d
   }
 
-  const getUserName = (user) => {
-    return user?.nome || user?.name || user?.displayName || 'Usuário'
-  }
+  /* =========================================================
+   * 🧾 HISTÓRICO PADRÃO
+   * ======================================================= */
 
-  const getUserEmail = (user) => user?.email || ''
+  const createHistoryEntry = (status, user, observacao = '') =>
+    removeUndefined({
+      status,
+      userId: getUserId(user),
+      userName: getUserName(user),
+      userEmail: getUserEmail(user),
+      observacao,
+      createdAt: now(),
+    })
+
+  /* =========================================================
+   * 🔢 REQUEST NUMBER
+   * ======================================================= */
 
   const generateRequestNumber = async () => {
     const snapshot = await getDocs(collection(db, COLLECTION))
-
-    const nextNumber = snapshot.size + 1
-
-    return `REQ-${String(nextNumber).padStart(6, '0')}`
+    const next = snapshot.size + 1
+    return `REQ-${String(next).padStart(6, '0')}`
   }
 
-  const createHistoryEntry = (status, user, observacao = '') => ({
-    status,
+  /* =========================================================
+   * 📥 GET
+   * ======================================================= */
 
-    userId: getUserId(user),
-    userName: getUserName(user),
-    userEmail: getUserEmail(user),
+  const getRequests = async () => await api.list(COLLECTION)
 
-    observacao,
-
-    createdAt: new Date(),
-  })
-
-  const getRequests = async () => {
-    return await api.list(COLLECTION)
-  }
-
-  const getRequestById = async (id) => {
-    return await api.getById(COLLECTION, id)
-  }
-
-  const getRequestsByStatus = async (status) => {
-    const requests = await getRequests()
-
-    return requests.filter((request) => request.status === status)
-  }
+  const getRequestById = async (id) => await api.getById(COLLECTION, id)
 
   const getRequestsByStatuses = async (statuses = []) => {
     const requests = await getRequests()
-
-    return requests.filter((request) => statuses.includes(request.status))
+    return requests.filter((r) => statuses.includes(r.status))
   }
 
   const getRequestsByUser = async (userId) => {
     const requests = await getRequests()
-
-    return requests.filter((request) => request.solicitanteId === userId)
+    return requests.filter((r) => r.solicitanteId === userId)
   }
+
+  /* =========================================================
+   * ➕ CREATE
+   * ======================================================= */
 
   const createRequest = async ({ requestData, user }) => {
     const requestNumber = await generateRequestNumber()
 
-    const payload = {
+    const payload = removeUndefined({
       ...createRequestModel(),
       ...requestData,
 
       requestNumber,
 
-      status: requestData.status, // 👈 usa o que veio da tela
+      status: requestData.status,
 
       solicitanteId: getUserId(user),
       solicitanteNome: getUserName(user),
       solicitanteEmail: getUserEmail(user),
 
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now(),
+      updatedAt: now(),
 
       historico: [createHistoryEntry(requestData.status, user, 'Solicitação criada')],
-    }
+    })
 
     return await api.post(COLLECTION, payload)
   }
 
-  const updateRequest = async (id, requestData, user) => {
-    const ref = doc(db, COLLECTION, id)
+  /* =========================================================
+   * 🔄 UPDATE (SAFE)
+   * ======================================================= */
 
+  const updateRequest = async (id, requestData = {}, user = null) => {
+    const ref = doc(db, COLLECTION, id)
     const current = await getRequestById(id)
 
-    const statusChanged = current.status !== requestData.status
+    let historico = current?.historico || []
 
-    let historico = current.historico || []
+    const statusChanged = requestData.status && requestData.status !== current.status
 
-    if (statusChanged) {
+    if (statusChanged && user) {
       historico = [
         ...historico,
         createHistoryEntry(
@@ -112,315 +124,240 @@ export default function useRequests() {
       ]
     }
 
-    await updateDoc(ref, {
+    const payload = removeUndefined({
       ...requestData,
-      historico,
-      updatedAt: new Date(),
+      historico: requestData.historico || historico,
+      updatedAt: now(),
     })
+
+    await updateDoc(ref, payload)
   }
 
+  /* =========================================================
+   * 🔁 DELETE  (CORE)
+   * ======================================================= */
+
   const deleteRequest = async (id) => {
+    if (!id) throw new Error('ID inválido')
+
     return await api.remove(COLLECTION, id)
   }
 
+  /* =========================================================
+   * 🔁 CHANGE STATUS (CORE)
+   * ======================================================= */
+
   const changeStatus = async ({ request, newStatus, user, observacao = '', extraData = {} }) => {
-    const current = await getRequestById(request.id) // 🔥 garante histórico atualizado
+    const current = await getRequestById(request.id)
 
     const historico = [
       ...(current?.historico || []),
-
       createHistoryEntry(newStatus, user, observacao),
     ]
 
-    return await updateRequest(request.id, {
-      ...extraData,
-      status: newStatus,
-      historico,
-    })
+    return await updateRequest(
+      request.id,
+      {
+        ...extraData,
+        status: newStatus,
+        historico,
+      },
+      user,
+    )
   }
 
-  const approveRequest = async ({ request, user, observacao = '' }) => {
-    return await changeStatus({
+  /* =========================================================
+   * ✅ ACTIONS
+   * ======================================================= */
+
+  const approveRequest = async ({ request, user, observacao = '' }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.APPROVED,
-
       user,
-
       observacao,
-
       extraData: {
         analise: {
           decisao: REQUEST_STATUS.APPROVED,
-
-          analyzedAt: new Date(),
-
+          analyzedAt: now(),
           analyzedBy: getUserId(user),
-
           analyzedByName: getUserName(user),
-
-          analysisObservation: observacao,
-
           observacao,
-
-          usuarioId: getUserId(user),
-
-          usuarioNome: getUserName(user),
-
-          data: new Date(),
         },
       },
     })
-  }
 
-  const rejectRequest = async ({ request, user, observacao = '' }) => {
-    return await changeStatus({
+  const rejectRequest = async ({ request, user, observacao = '' }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.REJECTED,
-
       user,
-
       observacao,
-
       extraData: {
         jaFoiIndeferido: true,
-
-        analyzedAt: new Date(),
-
-        analyzedBy: getUserId(user),
-
-        analyzedByName: getUserName(user),
-
-        analysisObservation: observacao,
-
         analise: {
           decisao: REQUEST_STATUS.REJECTED,
-
+          analyzedAt: now(),
+          analyzedBy: getUserId(user),
+          analyzedByName: getUserName(user),
           observacao,
-
-          usuarioId: getUserId(user),
-
-          usuarioNome: getUserName(user),
-
-          data: new Date(),
         },
       },
     })
-  }
 
-  const waitRequest = async ({ request, user, observacao = '' }) => {
-    return await changeStatus({
+  const waitRequest = async ({ request, user, observacao = '' }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.WAITING,
-
       user,
-
       observacao,
-
-      extraData: {
-        analyzedAt: new Date(),
-
-        analyzedBy: getUserId(user),
-
-        analyzedByName: getUserName(user),
-
-        analysisObservation: observacao,
-      },
     })
-  }
 
-  const sendToRevision = async ({ request, user, observacao = '' }) => {
-    return await changeStatus({
+  const sendToRevision = async ({ request, user, observacao = '' }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.REVISION,
-
       user,
-
       observacao,
     })
-  }
 
-  const sendToAnalysis = async ({ request, user, observacao = '' }) => {
-    return await changeStatus({
+  const sendToAnalysis = async ({ request, user, observacao = '' }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.PENDING_ANALYSIS,
-
       user,
-
       observacao,
     })
-  }
 
-  const requestReanalysis = async ({ request, user, motivo }) => {
-    return await changeStatus({
+  /* =========================================================
+   * 🔥 REANÁLISE
+   * ======================================================= */
+
+  const requestReanalysis = async ({ request, user, motivo }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.REANALYSIS,
-
       user,
-
       observacao: 'Solicitada reanálise',
-
       extraData: {
         reanalises: (request.reanalises || 0) + 1,
-
         reanalysisRequested: true,
-
-        reanalysisRequestedAt: new Date(),
-
+        reanalysisRequestedAt: now(),
         reanalise: {
           motivo,
-
           usuarioId: getUserId(user),
-
           usuarioNome: getUserName(user),
-
-          data: new Date(),
+          data: now(),
         },
       },
     })
-  }
 
-  const reinforceRequest = async ({ request, user }) => {
-    return await changeStatus({
+  /* =========================================================
+   * 🚨 REFORÇO (CORRIGIDO)
+   * ======================================================= */
+
+  const reinforceRequest = async ({ request, user }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.WAITING,
-
       user,
-
-      observacao: 'Solicitado reforço de análise',
-
+      observacao: 'Solicitação marcada como URGENTE',
       extraData: {
-        prioridadeAnalise: true,
-
-        prioridadeData: new Date(),
+        reforco: true,
+        reforcoAt: now(),
+        reforcadoPor: getUserId(user),
+        reforcadoPorNome: getUserName(user),
       },
     })
-  }
 
-  const finishRequest = async ({ request, user }) => {
-    return await changeStatus({
+  /* =========================================================
+   * 🏁 FINALIZAR
+   * ======================================================= */
+
+  const finishRequest = async ({ request, user }) =>
+    changeStatus({
       request,
-
       newStatus: REQUEST_STATUS.FINISHED,
-
       user,
-
       observacao: 'Pedido finalizado',
-
       extraData: {
         pagamento: {
           ...request.pagamento,
-
           comprado: true,
-
-          dataCompra: new Date(),
-
+          dataCompra: now(),
           usuarioId: getUserId(user),
-
           usuarioNome: getUserName(user),
         },
       },
     })
-  }
+
+  /* =========================================================
+   * 📄 DUPLICAR
+   * ======================================================= */
 
   const duplicateRequest = async ({ request, user }) => {
     const requestNumber = await generateRequestNumber()
 
-    const initialStatus = REQUEST_STATUS.REVISION
-
     const payload = {
-      originalRequestId: request.id,
       ...createRequestModel(),
 
+      originalRequestId: request.id,
       requestNumber,
 
       titulo: request.titulo,
-
       descricao: request.descricao,
-
       categoria: request.categoria,
-
       justificativa: request.justificativa,
-
       quantidade: request.quantidade,
-
       produtoUrl: request.produtoUrl,
-
       fornecedor: request.fornecedor,
 
       valorUnitario: request.valorUnitario,
-
       valorTotal: request.valorTotal,
 
-      observacoes: request.observacoes || '',
-
-      isEletronico: request.isEletronico,
-
       setorId: request.setorId,
-
       setorNome: request.setorNome,
 
       solicitanteId: getUserId(user),
-
       solicitanteNome: getUserName(user),
-
       solicitanteEmail: getUserEmail(user),
 
-      status: initialStatus,
+      status: REQUEST_STATUS.REVISION,
 
-      createdAt: new Date(),
+      createdAt: now(),
+      updatedAt: now(),
 
-      updatedAt: new Date(),
-
-      historico: [createHistoryEntry(initialStatus, user, 'Solicitação criada')],
+      historico: [createHistoryEntry(REQUEST_STATUS.REVISION, user, 'Solicitação duplicada')],
     }
 
     return await api.post(COLLECTION, payload)
   }
 
+  /* ========================================================= */
+
   return {
     createRequest,
-
     updateRequest,
-
     deleteRequest,
+    parseDate,
 
     getRequests,
-
     getRequestById,
-
-    getRequestsByStatus,
-
     getRequestsByStatuses,
-
     getRequestsByUser,
 
     approveRequest,
-
     rejectRequest,
-
     waitRequest,
-
     sendToRevision,
-
     sendToAnalysis,
 
     requestReanalysis,
-
     reinforceRequest,
-
     finishRequest,
-
     duplicateRequest,
 
     changeStatus,
-
     generateRequestNumber,
   }
 }

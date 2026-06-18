@@ -144,7 +144,7 @@ import useAuthUser from 'src/composables/UseAuthUser'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 const returnRoute = computed(() => {
-  return isBudget.value ? '/app/buy/budget' : '/app/buy/review'
+  return isBudget.value ? '/app/buy/budget' : '/app/buy/revision'
 })
 
 // ROUTER
@@ -152,7 +152,7 @@ const route = useRoute()
 const router = useRouter()
 
 // COMPOSABLES
-const { getRequestById, updateRequest } = useRequests()
+const { getRequestById, changeStatus } = useRequests()
 const { user } = useAuthUser()
 
 // STATE
@@ -215,14 +215,6 @@ onMounted(async () => {
 // =========================
 // SAVE
 // =========================
-const cleanObject = (obj) => {
-  return Object.fromEntries(Object.entries(obj).filter(([v]) => v !== undefined))
-}
-
-const cleanArray = (arr = []) => {
-  return arr.map((item) => cleanObject(item))
-}
-
 const save = async () => {
   try {
     // VALIDAÇÃO
@@ -235,40 +227,28 @@ const save = async () => {
     // STATUS
     const newStatus = isBudget.value ? REQUEST_STATUS.REVISION : REQUEST_STATUS.PENDING_ANALYSIS
 
-    // PAYLOAD
-    const payload = cleanObject({
+    // PAYLOAD LIMPO
+    const payload = {
       produtoUrl: form.value.produtoUrl,
       valorUnitario: Number(form.value.valorUnitario),
       valorTotal: Number(form.value.valorTotal),
       formaPagamento: form.value.formaPagamento,
       status: newStatus,
-      updatedAt: new Date(),
-      updatedBy: user.value?.id || null,
-    })
+    }
 
     // OBSERVAÇÃO
-    if (!isBudget.value) {
-      payload.observacao = form.value.observacao || null
-    }
+    const observacao = isBudget.value
+      ? 'Orçamento enviado para revisão'
+      : form.value.observacao || 'Revisão realizada'
 
-    // HISTORY NOVO
-    const historyEntry = cleanObject({
-      action: isBudget.value ? 'ORCAMENTO_ENVIADO' : 'REVISAO_REALIZADA',
-      userId: user.value?.id || null,
-      userName: user.value?.name || null,
-      createdAt: new Date(),
-      observacao: isBudget.value ? 'Orçamento enviado para revisão' : form.value.observacao || null,
+    // ✅ AQUI ESTÁ O PADRÃO CORRETO
+    await changeStatus({
+      request: request.value,
+      newStatus,
+      user: user.value,
+      observacao,
+      extraData: payload,
     })
-
-    // 🔥 LIMPA HISTÓRICO ANTIGO (ESSENCIAL)
-    const safeHistory = cleanArray(request.value.history || [])
-
-    const finalData = {
-      ...payload,
-      history: [...safeHistory, historyEntry],
-    }
-
-    await updateRequest(request.value.id, finalData)
 
     router.push(returnRoute.value)
   } catch (err) {

@@ -21,7 +21,7 @@
       </q-card-section>
     </q-card>
 
-    <q-form ref="formRef" @submit="save">
+    <q-form ref="formRef" @submit="save" greedy>
       <!-- PRODUTO -->
       <q-card flat bordered class="q-mb-md section-card">
         <q-card-section>
@@ -29,7 +29,13 @@
 
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6">
-              <q-input dense filled v-model="form.titulo" label="Título *" />
+              <q-input
+                dense
+                filled
+                v-model="form.titulo"
+                label="Título *"
+                :rules="[required('o título')]"
+              />
             </div>
 
             <div class="col-12 col-md-6">
@@ -41,6 +47,7 @@
                 :options="categoryOptions"
                 emit-value
                 map-options
+                :rules="[required('a categoria')]"
               />
             </div>
 
@@ -51,6 +58,7 @@
                 v-model.number="form.quantidade"
                 type="number"
                 label="Quantidade *"
+                :rules="[requiredNumber('a quantidade')]"
               />
             </div>
 
@@ -62,6 +70,7 @@
                 type="textarea"
                 autogrow
                 label="Descrição *"
+                :rules="[required('a descrição')]"
               />
             </div>
           </div>
@@ -75,7 +84,13 @@
 
           <div class="row q-col-gutter-md">
             <div class="col-12">
-              <q-input dense filled v-model="form.produtoUrl" label="URL do Produto *" />
+              <q-input
+                dense
+                filled
+                v-model="form.produtoUrl"
+                :label="showFinanceiro ? 'URL do Produto *' : 'URL do Produto'"
+                :rules="showFinanceiro ? [required('a URL do produto'), validUrl] : [validUrl]"
+              />
             </div>
 
             <div class="col-12 col-md-6">
@@ -85,6 +100,7 @@
                 v-model.number="form.valorUnitario"
                 type="number"
                 label="Valor Unitário *"
+                :rules="showFinanceiro ? [requiredNumber('o valor unitário')] : []"
               />
             </div>
 
@@ -113,6 +129,7 @@
             type="textarea"
             autogrow
             label="Justificativa *"
+            :rules="[required('a justificativa')]"
           />
         </q-card-section>
       </q-card>
@@ -162,6 +179,16 @@ const requestId = computed(() => route.params.id)
 const isEditing = computed(() => !!requestId.value)
 
 const form = reactive(createRequestModel())
+
+const required = (label) => (val) => !!val || `Informe ${label}`
+
+const requiredNumber = (label) => (val) =>
+  (val !== null && val !== undefined && val !== '') || `Informe ${label}`
+
+const validUrl = (val) => {
+  if (!val) return true // deixa required cuidar disso
+  return /^https?:\/\/.+/.test(val) || 'URL inválida (use http ou https)'
+}
 
 // CATEGORIAS
 const categoryOptions = [

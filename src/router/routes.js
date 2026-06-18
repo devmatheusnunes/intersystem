@@ -123,6 +123,15 @@ const routes = [
       },
 
       {
+        path: 'buy/analysisdetail/:id',
+        name: 'buy-analysisdetail',
+        component: () => import('pages/buy/AnalysisDetailsPage.vue'),
+        meta: {
+          permission: 'analysis.view',
+        },
+      },
+
+      {
         path: 'buy/payment',
         name: 'buy-payment',
         component: () => import('pages/buy/PaymentPage.vue'),

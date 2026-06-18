@@ -126,7 +126,7 @@
         <template #body-cell-status="props">
           <q-td :props="props">
             <q-chip
-              v-if="props.row.status === 'Pendente Análise'"
+              v-if="props.row.status === REQUEST_STATUS.PENDING_ANALYSIS"
               color="analysis"
               text-color="white"
               icon="hourglass_top"
@@ -135,7 +135,7 @@
             </q-chip>
 
             <q-chip
-              v-else-if="props.row.status === 'Em Orçamento'"
+              v-else-if="props.row.status === REQUEST_STATUS.BUDGET"
               color="budget"
               text-color="white"
               icon="request_page"
@@ -144,7 +144,7 @@
             </q-chip>
 
             <q-chip
-              v-else-if="props.row.status === 'Em Revisão'"
+              v-else-if="props.row.status === REQUEST_STATUS.REVISION"
               color="revision"
               text-color="white"
               icon="grading"
@@ -240,9 +240,9 @@ const columns = [
 
 const stats = computed(() => ({
   total: rows.value.length,
-  revisao: rows.value.filter((i) => i.status === 'Em Revisão').length,
-  orcamento: rows.value.filter((i) => i.status === 'Em Orçamento').length,
-  analise: rows.value.filter((i) => i.status === 'Pendente Análise').length,
+  revisao: rows.value.filter((i) => i.status === REQUEST_STATUS.REVISION).length,
+  orcamento: rows.value.filter((i) => i.status === REQUEST_STATUS.BUDGET).length,
+  analise: rows.value.filter((i) => i.status === REQUEST_STATUS.PENDING_ANALYSIS).length,
 }))
 
 const filteredRows = computed(() => {
@@ -289,11 +289,15 @@ const editRequest = (id) => {
 }
 
 const canEdit = (row) => {
-  return can('requests.edit') && ['Em Orçamento', 'Em Revisão'].includes(row.status)
+  return (
+    can('requests.edit') && [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION].includes(row.status)
+  )
 }
 
 const canDelete = (row) => {
-  return can('requests.delete') && ['Em Orçamento', 'Em Revisão'].includes(row.status)
+  return (
+    can('requests.delete') && [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION].includes(row.status)
+  )
 }
 
 const confirmDelete = (row) => {
