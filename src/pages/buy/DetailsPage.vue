@@ -1,97 +1,58 @@
-```vue
 <template>
   <q-page class="page-container q-pa-md">
     <div v-if="loading" class="row justify-center q-mt-xl">
       <q-spinner color="primary" size="50px" />
     </div>
-
     <div v-else-if="request">
       <!-- HEADER -->
-
-      <div class="row items-center justify-between q-mb-lg">
-        <div>
-          <div class="text-h5 text-weight-bold">Solicitação {{ request.requestNumber }}</div>
-
-          <div class="text-grey-7">Detalhes completos da solicitação</div>
-        </div>
-
-        <div>
-          <q-chip :color="getStatusColor(request.status)" text-color="white" size="md">
+      <q-card flat bordered class="q-mb-lg header-card">
+        <q-card-section class="row items-center justify-between">
+          <div>
+            <div class="text-overline text-grey-7">Solicitação</div>
+            <div class="text-h5 text-weight-bold">#{{ request.requestNumber }}</div>
+            <div class="text-caption text-grey-6">
+              Criado em {{ formatDate(request.createdAt) }}
+            </div>
+          </div>
+          <q-chip
+            :color="getStatusColor(request.status)"
+            text-color="white"
+            size="lg"
+            class="text-weight-bold"
+          >
             {{ request.status }}
           </q-chip>
-        </div>
-      </div>
-
+        </q-card-section>
+      </q-card>
       <!-- RESUMO -->
-
       <div class="row q-col-gutter-md q-mb-lg">
-        <div class="col-12 col-sm-6 col-md">
-          <q-card flat bordered>
+        <div class="col-12 col-sm-6 col-md-3" v-for="item in summary" :key="item.label">
+          <q-card flat bordered class="summary-card">
             <q-card-section>
-              <div class="text-caption text-grey">Criado em</div>
-
-              <div class="text-subtitle1 text-weight-medium">
-                {{ formatDate(request.createdAt) }}
+              <div class="row items-center q-gutter-sm">
+                <q-icon :name="item.icon" size="20px" color="primary" />
+                <div class="text-caption text-grey-7">{{ item.label }}</div>
               </div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md">
-          <q-card flat bordered>
-            <q-card-section>
-              <div class="text-caption text-grey">Atualizado em</div>
-
-              <div class="text-subtitle1 text-weight-medium">
-                {{ formatDate(request.updatedAt) }}
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md">
-          <q-card flat bordered>
-            <q-card-section>
-              <div class="text-caption text-grey">Valor Total</div>
-
-              <div class="text-subtitle1 text-weight-bold">
-                {{ formatCurrency(request.valorTotal) }}
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md">
-          <q-card flat bordered>
-            <q-card-section>
-              <div class="text-caption text-grey">Quantidade</div>
-
-              <div class="text-subtitle1 text-weight-bold">
-                {{ request.quantidade }}
-              </div>
+              <div class="text-subtitle1 text-weight-bold q-mt-xs">{{ item.value }}</div>
             </q-card-section>
           </q-card>
         </div>
       </div>
-
       <!-- PRODUTO -->
-
-      <q-card flat bordered class="q-mb-md">
+      <q-card flat bordered class="q-mb-md section-card">
         <q-card-section>
-          <div class="text-h6 q-mb-md">Produto</div>
-
+          <div class="section-title">Produto</div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6">
-              <q-input outlined readonly label="Título" :model-value="request.titulo" />
+              <q-input dense filled readonly label="Título" :model-value="request.titulo" />
             </div>
-
             <div class="col-12 col-md-6">
-              <q-input outlined readonly label="Categoria" :model-value="request.categoria" />
+              <q-input dense filled readonly label="Categoria" :model-value="request.categoria" />
             </div>
-
             <div class="col-12">
               <q-input
-                outlined
+                dense
+                filled
                 readonly
                 type="textarea"
                 autogrow
@@ -99,59 +60,65 @@
                 :model-value="request.descricao"
               />
             </div>
-
             <div class="col-12 col-md-6">
-              <q-input outlined readonly label="Fornecedor" :model-value="request.fornecedor" />
+              <q-input dense filled readonly label="Fornecedor" :model-value="request.fornecedor" />
             </div>
-
             <div class="col-12 col-md-6">
-              <q-input outlined readonly label="Produto URL" :model-value="request.produtoUrl" />
+              <q-input dense filled readonly label="Produto URL" :model-value="request.produtoUrl">
+                <template v-slot:append>
+                  <q-icon
+                    v-if="request.produtoUrl"
+                    name="open_in_new"
+                    class="cursor-pointer"
+                    @click="openLink(request.produtoUrl)"
+                  />
+                </template>
+              </q-input>
             </div>
           </div>
         </q-card-section>
       </q-card>
-
       <!-- SOLICITANTE -->
-
-      <q-card flat bordered class="q-mb-md">
+      <q-card flat bordered class="q-mb-md section-card">
         <q-card-section>
-          <div class="text-h6 q-mb-md">Solicitante</div>
-
+          <div class="section-title">Solicitante</div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
-              <q-input outlined readonly label="Nome" :model-value="request.solicitanteNome" />
+              <q-input dense filled readonly label="Nome" :model-value="request.solicitanteNome" />
             </div>
-
             <div class="col-12 col-md-4">
-              <q-input outlined readonly label="Email" :model-value="request.solicitanteEmail" />
+              <q-input
+                dense
+                filled
+                readonly
+                label="Email"
+                :model-value="request.solicitanteEmail"
+              />
             </div>
-
             <div class="col-12 col-md-4">
-              <q-input outlined readonly label="Setor" :model-value="request.setorNome" />
+              <q-input dense filled readonly label="Setor" :model-value="request.setorNome" />
             </div>
           </div>
         </q-card-section>
       </q-card>
-
       <!-- FINANCEIRO -->
-
-      <q-card flat bordered class="q-mb-md">
+      <q-card flat bordered class="q-mb-md section-card">
         <q-card-section>
-          <div class="text-h6 q-mb-md">Financeiro</div>
-
+          <div class="section-title">Financeiro</div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6">
               <q-input
-                outlined
+                dense
+                filled
                 readonly
                 label="Valor Unitário"
                 :model-value="formatCurrency(request.valorUnitario)"
               />
             </div>
-
             <div class="col-12 col-md-6">
               <q-input
-                outlined
+                dense
+                filled
                 readonly
                 label="Valor Total"
                 :model-value="formatCurrency(request.valorTotal)"
@@ -160,94 +127,28 @@
           </div>
         </q-card-section>
       </q-card>
-
       <!-- JUSTIFICATIVA -->
-
-      <q-card flat bordered class="q-mb-md">
+      <q-card flat bordered class="q-mb-md section-card">
         <q-card-section>
-          <div class="text-h6 q-mb-md">Justificativa</div>
-
-          <div class="text-body1">
-            {{ request.justificativa || 'Não informada' }}
-          </div>
+          <div class="section-title">Justificativa</div>
+          <div class="justificativa-box">{{ request.justificativa || 'Não informada' }}</div>
         </q-card-section>
       </q-card>
-
-      <!-- CONTROLE -->
-
-      <q-card flat bordered class="q-mb-md">
-        <q-card-section>
-          <div class="text-h6 q-mb-md">Controle</div>
-
-          <div class="row q-col-gutter-md">
-            <div class="col-12 col-md-4">
-              <q-input
-                outlined
-                readonly
-                label="Eletrônico"
-                :model-value="request.isEletronico ? 'Sim' : 'Não'"
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-input
-                outlined
-                readonly
-                label="Prioridade"
-                :model-value="request.prioridadeAnalise ? 'Sim' : 'Não'"
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-input
-                outlined
-                readonly
-                label="Reanálises"
-                :model-value="request.reanalises || 0"
-              />
-            </div>
-
-            <div class="col-12 col-md-6">
-              <q-input
-                outlined
-                readonly
-                label="Data Prioridade"
-                :model-value="formatDate(request.prioridadeData)"
-              />
-            </div>
-
-            <div class="col-12 col-md-6">
-              <q-input
-                outlined
-                readonly
-                label="Solicitação Original"
-                :model-value="request.originalRequestId || '-'"
-              />
-            </div>
-          </div>
-        </q-card-section>
-      </q-card>
-
       <!-- HISTÓRICO -->
-
-      <q-card flat bordered>
+      <q-card flat bordered class="section-card">
         <q-card-section>
-          <div class="text-h6 q-mb-lg">Histórico</div>
-
+          <div class="section-title">Histórico</div>
           <q-timeline color="primary">
             <q-timeline-entry
-              v-for="(item, index) in request.historico"
+              v-for="(item, index) in sortedHistory"
               :key="index"
               :title="item.status"
-              :subtitle="formatDate(item.data)"
+              :subtitle="formatDate(item.timestamp || item.createdAt || item.data)"
             >
-              <div>
-                <strong>{{ item.usuarioNome }}</strong>
+              <div class="text-weight-medium">
+                {{ item.userName || item.usuarioNome || 'Usuário' }}
               </div>
-
-              <div>
-                {{ item.observacao }}
-              </div>
+              <div class="text-grey-7">{{ item.observacao || '-' }}</div>
             </q-timeline-entry>
           </q-timeline>
         </q-card-section>
@@ -255,12 +156,13 @@
     </div>
   </q-page>
 </template>
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import useRequests from 'src/composables/UseRequests'
+
+import { computed } from 'vue'
 
 const route = useRoute()
 
@@ -268,6 +170,41 @@ const loading = ref(true)
 const request = ref(null)
 
 const { getRequestById } = useRequests()
+
+const openLink = (url) => {
+  if (!url) return
+  window.open(url.startsWith('http') ? url : `https://${url}`)
+}
+
+const parseDate = (value) => {
+  if (!value) return new Date(0)
+
+  // Firestore Timestamp
+  if (typeof value?.toDate === 'function') {
+    return value.toDate()
+  }
+
+  // Já é Date
+  if (value instanceof Date) {
+    return value
+  }
+
+  // String ou número
+  const parsed = new Date(value)
+
+  return isNaN(parsed.getTime()) ? new Date(0) : parsed
+}
+
+const sortedHistory = computed(() => {
+  if (!request.value?.historico) return []
+
+  return [...request.value.historico].sort((a, b) => {
+    const dateA = parseDate(a.timestamp || a.createdAt || a.data)
+    const dateB = parseDate(b.timestamp || b.createdAt || b.data)
+
+    return dateA - dateB
+  })
+})
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -279,25 +216,63 @@ const formatCurrency = (value) => {
 const formatDate = (value) => {
   if (!value) return '-'
 
-  const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value)
+  let date = null
+
+  // Firestore Timestamp
+  if (typeof value?.toDate === 'function') {
+    date = value.toDate()
+  }
+  // Já é Date
+  else if (value instanceof Date) {
+    date = value
+  }
+  // String ou número
+  else {
+    date = new Date(value)
+  }
+
+  // Data inválida
+  if (isNaN(date.getTime())) return '-'
 
   return date.toLocaleString('pt-BR')
 }
 
 const getStatusColor = (status) => {
   const colors = {
-    Deferido: 'positive',
-    Indeferido: 'negative',
-    'Em Espera': 'warning',
-    Finalizado: 'primary',
-    'Pendente Análise': 'orange',
-    'Em Revisão': 'indigo',
-    'Em Orçamento': 'cyan',
-    'Em Reanálise': 'deep-orange',
+    Deferido: 'approved',
+    Indeferido: 'rejected',
+    'Em Espera': 'waiting',
+    Finalizado: 'finished',
+    'Pendente Análise': 'analysis',
+    'Em Revisão': 'revision',
+    'Em Orçamento': 'budget',
+    'Em Reanálise': 'reanalysis',
   }
-
   return colors[status] || 'grey'
 }
+
+const summary = computed(() => [
+  {
+    label: 'Criado em',
+    value: formatDate(request.value?.createdAt),
+    icon: 'event',
+  },
+  {
+    label: 'Atualizado em',
+    value: formatDate(request.value?.updatedAt),
+    icon: 'update',
+  },
+  {
+    label: 'Valor Total',
+    value: formatCurrency(request.value?.valorTotal),
+    icon: 'payments',
+  },
+  {
+    label: 'Quantidade',
+    value: request.value?.quantidade,
+    icon: 'inventory',
+  },
+])
 
 onMounted(async () => {
   try {
@@ -307,11 +282,63 @@ onMounted(async () => {
   }
 })
 </script>
-
 <style scoped>
 .page-container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
 }
+
+/* HEADER */
+.header-card {
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+/* SUMMARY */
+.summary-card {
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+}
+
+/* SECTIONS */
+.section-card {
+  border-radius: 14px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* JUSTIFICATIVA */
+.justificativa-box {
+  background: #f3f4f6;
+  padding: 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.product-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3b82f6;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.product-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
 </style>
-```

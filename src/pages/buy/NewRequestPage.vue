@@ -1,179 +1,130 @@
 <template>
-  <q-page class="page-container">
-    <div class="page-wrapper">
-      <div class="page-title">
+  <q-page class="page-container q-pa-md">
+    <!-- HEADER -->
+    <q-card flat bordered class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between">
         <div>
-          <h4>
-            {{ isEditing ? 'Editar Solicitação' : 'Nova Solicação de Compra' }}
-          </h4>
+          <div class="text-overline text-grey-7">
+            {{ isEditing ? 'Editar Solicitação' : 'Nova Solicitação' }}
+          </div>
 
-          <p>Preencha os dados da solicitação para envio ao fluxo de orçamento e análise.</p>
+          <div class="text-h5 text-weight-bold">#{{ form.requestNumber || '---' }}</div>
+
+          <div class="text-caption text-grey-6">
+            Preencha as informações para iniciar o processo
+          </div>
         </div>
-      </div>
 
-      <q-card flat bordered class="request-card">
-        <q-form ref="formRef" @submit="save">
-          <q-card-section>
-            <div class="section-title">Informações da Solicitação</div>
+        <q-chip color="primary" text-color="white" size="lg" class="text-weight-bold">
+          {{ form.categoria || '---' }}
+        </q-chip>
+      </q-card-section>
+    </q-card>
 
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model="form.requestNumber"
-                  outlined
-                  disable
-                  label="Número da Solicitação"
-                />
-              </div>
+    <q-form ref="formRef" @submit="save">
+      <!-- PRODUTO -->
+      <q-card flat bordered class="q-mb-md section-card">
+        <q-card-section>
+          <div class="section-title">Produto</div>
 
-              <div class="col-12 col-md-8">
-                <q-input
-                  v-model="form.titulo"
-                  outlined
-                  label="Título *"
-                  :rules="[(val) => !!val || 'Informe o título']"
-                />
-              </div>
-
-              <div class="col-12">
-                <q-input
-                  v-model="form.descricao"
-                  outlined
-                  type="textarea"
-                  rows="4"
-                  label="Descrição *"
-                  :rules="[(val) => !!val || 'Informe a descrição']"
-                />
-              </div>
-
-              <div class="col-12 col-md-6">
-                <q-input
-                  v-model="form.categoria"
-                  outlined
-                  label="Categoria *"
-                  :rules="[(val) => !!val || 'Informe a categoria']"
-                />
-              </div>
-
-              <div class="col-12 col-md-6">
-                <q-input
-                  v-model.number="form.quantidade"
-                  outlined
-                  type="number"
-                  min="1"
-                  label="Quantidade *"
-                  :rules="[(val) => val > 0 || 'Quantidade inválida']"
-                />
-              </div>
-
-              <!-- 🆕 VALORES -->
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model.number="form.valorUnitario"
-                  outlined
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  label="Valor Unitário *"
-                  :rules="[(val) => val > 0 || 'Informe um valor válido']"
-                />
-              </div>
-
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model.number="form.valorTotal"
-                  outlined
-                  type="number"
-                  label="Valor Total"
-                  disable
-                />
-              </div>
-
-              <div class="col-12 col-md-4">
-                <q-select
-                  v-model="form.formaPagamento"
-                  outlined
-                  label="Forma de Pagamento *"
-                  :options="paymentOptions"
-                  emit-value
-                  map-options
-                  :rules="[(val) => !!val || 'Selecione a forma de pagamento']"
-                />
-              </div>
-
-              <div class="col-12">
-                <q-option-group
-                  v-model="form.isEletronico"
-                  inline
-                  :options="[
-                    { label: 'Item eletrônico', value: true },
-                    { label: 'Item não eletrônico', value: false },
-                  ]"
-                />
-              </div>
-
-              <div class="col-12">
-                <q-input
-                  v-model="form.produtoUrl"
-                  outlined
-                  label="URL do Produto"
-                  lazy-rules
-                  :rules="[
-                    (val) => (form.isEletronico ? true : !!val || 'Informe a URL do produto'),
-                  ]"
-                />
-              </div>
-
-              <div class="col-12">
-                <q-input
-                  v-model="form.justificativa"
-                  outlined
-                  type="textarea"
-                  rows="5"
-                  label="Justificativa *"
-                  :rules="[(val) => !!val || 'Informe a justificativa']"
-                />
-              </div>
-
-              <div class="col-12 col-md-6">
-                <q-input v-model="form.solicitanteNome" outlined disable label="Solicitante" />
-              </div>
-
-              <div class="col-12 col-md-6">
-                <q-input v-model="form.solicitanteEmail" outlined disable label="E-mail" />
-              </div>
-
-              <div class="col-12">
-                <q-input v-model="form.setorNome" outlined disable label="Setor" />
-              </div>
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-6">
+              <q-input dense filled v-model="form.titulo" label="Título *" />
             </div>
-          </q-card-section>
 
-          <q-separator />
+            <div class="col-12 col-md-6">
+              <q-select
+                dense
+                filled
+                v-model="form.categoria"
+                label="Categoria *"
+                :options="categoryOptions"
+                emit-value
+                map-options
+              />
+            </div>
 
-          <q-card-actions align="right" class="q-pa-md">
-            <q-btn
-              color="warning"
-              text-color="black"
-              icon="cleaning_services"
-              label="Limpar"
-              @click="resetForm"
-            />
+            <div class="col-12 col-md-4">
+              <q-input
+                dense
+                filled
+                v-model.number="form.quantidade"
+                type="number"
+                label="Quantidade *"
+              />
+            </div>
 
-            <q-space />
-
-            <q-btn outline color="negative" icon="close" label="Cancelar" @click="returnPage" />
-
-            <q-btn
-              color="positive"
-              icon="save"
-              :label="isEditing ? 'Atualizar' : 'Salvar'"
-              type="submit"
-            />
-          </q-card-actions>
-        </q-form>
+            <div class="col-12">
+              <q-input
+                dense
+                filled
+                v-model="form.descricao"
+                type="textarea"
+                autogrow
+                label="Descrição *"
+              />
+            </div>
+          </div>
+        </q-card-section>
       </q-card>
-    </div>
+
+      <!-- FINANCEIRO -->
+      <q-card v-if="showFinanceiro" flat bordered class="q-mb-md section-card">
+        <q-card-section>
+          <div class="section-title">Financeiro</div>
+
+          <div class="row q-col-gutter-md">
+            <div class="col-12">
+              <q-input dense filled v-model="form.produtoUrl" label="URL do Produto *" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <q-input
+                dense
+                filled
+                v-model.number="form.valorUnitario"
+                type="number"
+                label="Valor Unitário *"
+              />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <q-input
+                dense
+                filled
+                readonly
+                :model-value="formatCurrency(form.valorTotal)"
+                label="Valor Total"
+              />
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- JUSTIFICATIVA -->
+      <q-card flat bordered class="q-mb-md section-card">
+        <q-card-section>
+          <div class="section-title">Justificativa</div>
+
+          <q-input
+            dense
+            filled
+            v-model="form.justificativa"
+            type="textarea"
+            autogrow
+            label="Justificativa *"
+          />
+        </q-card-section>
+      </q-card>
+
+      <!-- ACTIONS -->
+      <div class="row justify-end q-gutter-sm">
+        <q-btn flat color="grey-7" label="Limpar" @click="resetForm" />
+        <q-space />
+        <q-btn outline color="negative" label="Cancelar" @click="returnPage" />
+        <q-btn color="primary" unelevated type="submit" label="Salvar" />
+      </div>
+    </q-form>
   </q-page>
 </template>
 
@@ -188,40 +139,57 @@ import useRequests from 'src/composables/UseRequests'
 import { createRequestModel } from 'src/models/requestModel'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
+// ROUTER
 const route = useRoute()
 const router = useRouter()
 
 const formRef = ref(null)
 
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(Number(value || 0))
+}
+
+// COMPOSABLES
 const { profile } = useAuthUser()
 const { notifySuccess, notifyError, notifyWarning } = useNotify()
-
 const { createRequest, updateRequest, getRequestById, generateRequestNumber } = useRequests()
 
+// STATE
 const requestId = computed(() => route.params.id)
 const isEditing = computed(() => !!requestId.value)
 
 const form = reactive(createRequestModel())
 
-// 🆕 opções pagamento
-const paymentOptions = [
-  { label: 'Pix', value: 'pix' },
-  { label: 'Boleto', value: 'boleto' },
-  { label: 'Cartão de Crédito', value: 'credito' },
-  { label: 'Cartão de Débito', value: 'debito' },
-  { label: 'Transferência', value: 'transferencia' },
+// CATEGORIAS
+const categoryOptions = [
+  { label: 'Eletrônico', value: 'eletronico' },
+  { label: 'Material de Escritório', value: 'escritorio' },
+  { label: 'Equipamento', value: 'equipamento' },
+  { label: 'Outros', value: 'outros' },
 ]
 
-// 🧠 cálculo automático
+// 🔥 REGRA PRINCIPAL
+const isEletronico = computed(() => form.categoria === 'eletronico')
+const showFinanceiro = computed(() => !isEletronico.value)
+
+// 🧮 TOTAL AUTOMÁTICO
 watch(
-  () => [form.quantidade, form.valorUnitario],
-  ([qtd, valor]) => {
-    const total = Number(qtd || 0) * Number(valor || 0)
-    form.valorTotal = Number(total.toFixed(2))
+  () => [form.valorUnitario, form.quantidade],
+  () => {
+    if (!showFinanceiro.value) {
+      form.valorTotal = null
+      return
+    }
+
+    form.valorTotal = Number(form.valorUnitario || 0) * Number(form.quantidade || 0)
   },
+  { immediate: true },
 )
 
-// 👤 carregar usuário
+// 👤 USER
 watch(
   profile,
   async (user) => {
@@ -240,30 +208,36 @@ watch(
   { immediate: true },
 )
 
-// 📥 carregar edição
+// LOAD (edição)
 const loadRequest = async () => {
   if (!requestId.value) return
 
-  const request = await getRequestById(requestId.value)
+  try {
+    const request = await getRequestById(requestId.value)
 
-  if (!request) {
-    notifyError('Solicitação não encontrada')
-    router.push('/app/buy/requests')
-    return
+    if (!request) {
+      notifyError('Solicitação não encontrada')
+      router.push('/app/buy/requests')
+      return
+    }
+
+    Object.assign(form, request)
+  } catch (err) {
+    console.error(err)
+    notifyError('Erro ao carregar')
   }
-
-  const editableStatuses = [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION]
-
-  if (!editableStatuses.includes(request.status)) {
-    notifyWarning('Esta solicitação não pode ser editada')
-    router.push('/app/buy/requests')
-    return
-  }
-
-  Object.assign(form, request)
 }
 
-// 💾 salvar
+// STATUS AUTOMÁTICO
+const getStatusByCategory = () => {
+  return form.categoria === 'eletronico' ? REQUEST_STATUS.BUDGET : REQUEST_STATUS.REVISION
+}
+
+// 🧹 REMOVE UNDEFINED
+const cleanPayload = (obj) =>
+  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
+
+// 💾 SAVE
 const save = async () => {
   const valid = await formRef.value.validate()
 
@@ -272,38 +246,34 @@ const save = async () => {
     return
   }
 
-  const getStatusByType = () => {
-    return form.isEletronico ? 'Em Orçamento' : 'Em Revisão'
-  }
-
-  const payload = {
-    titulo: form.titulo,
-    descricao: form.descricao,
-    categoria: form.categoria,
-    justificativa: form.justificativa,
-    quantidade: form.quantidade,
-    produtoUrl: form.produtoUrl,
-    isEletronico: form.isEletronico,
-
-    valorUnitario: form.valorUnitario,
-    valorTotal: form.valorTotal,
-    formaPagamento: form.formaPagamento,
-
-    solicitanteId: form.solicitanteId,
-    solicitanteNome: form.solicitanteNome,
-    solicitanteEmail: form.solicitanteEmail,
-    setorId: form.setorId,
-    setorNome: form.setorNome,
-
-    requestNumber: form.requestNumber,
-
-    // 🔥 AQUI está a correção
-    status: getStatusByType(),
-  }
-
   try {
+    const payload = cleanPayload({
+      titulo: form.titulo,
+      descricao: form.descricao,
+      categoria: form.categoria,
+      justificativa: form.justificativa,
+      quantidade: Number(form.quantidade),
+
+      // 🔥 CAMPOS CONDICIONAIS
+      produtoUrl: showFinanceiro.value ? form.produtoUrl || null : null,
+      valorUnitario: showFinanceiro.value ? Number(form.valorUnitario || 0) : null,
+      valorTotal: showFinanceiro.value ? Number(form.valorTotal || 0) : null,
+
+      solicitanteId: form.solicitanteId,
+      solicitanteNome: form.solicitanteNome,
+      solicitanteEmail: form.solicitanteEmail,
+      setorId: form.setorId,
+      setorNome: form.setorNome,
+
+      requestNumber: form.requestNumber,
+
+      status: getStatusByCategory(),
+
+      updatedAt: new Date(),
+    })
+
     if (isEditing.value) {
-      await updateRequest(requestId.value, payload)
+      await updateRequest(requestId.value, payload, profile.value)
       notifySuccess('Atualizado com sucesso')
     } else {
       await createRequest({
@@ -314,25 +284,26 @@ const save = async () => {
     }
 
     router.push('/app/buy/requests')
-  } catch {
+  } catch (error) {
+    console.error(error)
     notifyError('Erro ao salvar')
   }
 }
 
-// 🧹 reset
+// RESET
 const resetForm = () => {
   form.titulo = ''
   form.descricao = ''
   form.categoria = ''
   form.justificativa = ''
   form.quantidade = 1
+
+  form.produtoUrl = ''
   form.valorUnitario = 0
   form.valorTotal = 0
-  form.formaPagamento = null
-  form.isEletronico = false
-  form.produtoUrl = ''
 }
 
+// BACK
 const returnPage = () => {
   router.push('/app/buy/requests')
 }
@@ -342,27 +313,28 @@ onMounted(loadRequest)
 
 <style scoped>
 .page-container {
-  background: #f5f6fa;
-  min-height: 100%;
-  padding: 24px;
-}
-
-.page-wrapper {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
-.page-title h4 {
-  margin: 0;
-  font-weight: 600;
+/* HEADER */
+.header-card {
+  border-radius: 14px;
+  background: #f9fafb;
 }
 
-.request-card {
-  border-radius: 12px;
+/* SECTIONS */
+.section-card {
+  border-radius: 14px;
 }
 
 .section-title {
-  font-weight: 600;
-  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 </style>
+>

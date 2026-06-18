@@ -87,9 +87,27 @@ const routes = [
       },
 
       {
+        path: 'buy/budgetdetail/:id',
+        name: 'buy-budgetdetail',
+        component: () => import('pages/buy/BudgetReviewPage.vue'),
+        meta: {
+          permission: 'budget.view',
+        },
+      },
+
+      {
         path: 'buy/revision',
         name: 'buy-revision',
         component: () => import('pages/buy/RevisionPage.vue'),
+        meta: {
+          permission: 'revision.view',
+        },
+      },
+
+      {
+        path: 'buy/revisiondetail/:id',
+        name: 'buy-revisiondetail',
+        component: () => import('pages/buy/BudgetReviewPage.vue'),
         meta: {
           permission: 'revision.view',
         },

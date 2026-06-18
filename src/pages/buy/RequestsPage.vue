@@ -57,12 +57,10 @@
         :loading="loading"
         :pagination="{ rowsPerPage: 10 }"
       >
-        <!-- Top -->
         <template #top>
           <div class="row items-center full-width q-gutter-md">
             <div>
               <div class="text-h6 text-weight-bold">Solicitações de Compras</div>
-
               <div class="text-caption text-grey-7">Gerencie as solicitações cadastradas</div>
             </div>
 
@@ -92,7 +90,7 @@
           </div>
         </template>
 
-        <!-- Produto + Solicitante -->
+        <!-- Produto -->
         <template #body-cell-titulo="props">
           <q-td :props="props">
             <div class="text-weight-medium">
@@ -129,8 +127,8 @@
           <q-td :props="props">
             <q-chip
               v-if="props.row.status === 'Pendente Análise'"
-              color="yellow-8"
-              text-color="black"
+              color="analysis"
+              text-color="white"
               icon="hourglass_top"
             >
               Pendente análise
@@ -138,7 +136,7 @@
 
             <q-chip
               v-else-if="props.row.status === 'Em Orçamento'"
-              color="blue-5"
+              color="budget"
               text-color="white"
               icon="request_page"
             >
@@ -147,7 +145,7 @@
 
             <q-chip
               v-else-if="props.row.status === 'Em Revisão'"
-              color="orange-10"
+              color="revision"
               text-color="white"
               icon="grading"
             >
@@ -170,7 +168,8 @@
         <!-- Ações -->
         <template #body-cell-actions="props">
           <q-td :props="props">
-            <q-btn flat round color="primary" icon="visibility" @click="openDetails(props.row)">
+            <!-- 🔥 AGORA VAI PARA A PÁGINA -->
+            <q-btn flat round color="primary" icon="visibility" @click="viewDetails(props.row.id)">
               <q-tooltip>Visualizar</q-tooltip>
             </q-btn>
 
@@ -198,7 +197,6 @@
           </q-td>
         </template>
 
-        <!-- No data -->
         <template #no-data>
           <div class="full-width row flex-center q-pa-xl text-grey">
             <q-icon name="inventory_2" size="40px" class="q-mr-sm" />
@@ -207,111 +205,6 @@
         </template>
       </q-table>
     </q-card>
-    <q-dialog v-model="detailsDialog">
-      <q-card style="min-width: 850px; max-width: 1000px; border-radius: 14px">
-        <!-- HEADER -->
-        <q-card-section class="bg-primary text-white">
-          <div class="row items-center">
-            <div>
-              <div class="text-subtitle2">Solicitação</div>
-              <div class="text-h6 text-weight-bold">
-                {{ selectedRequest?.requestNumber }}
-              </div>
-            </div>
-
-            <q-space />
-
-            <q-chip :color="getStatusColor(selectedRequest?.status)" text-color="white" dense>
-              {{ selectedRequest?.status }}
-            </q-chip>
-          </div>
-        </q-card-section>
-
-        <!-- CONTEÚDO -->
-        <q-card-section class="q-pa-lg">
-          <div class="row q-col-gutter-lg">
-            <!-- Produto -->
-            <div class="col-12">
-              <div class="text-subtitle1 text-weight-medium">
-                {{ selectedRequest?.titulo }}
-              </div>
-            </div>
-
-            <!-- Info principais -->
-            <div class="col-4">
-              <div class="field-label">Solicitante</div>
-              <div class="field-value">
-                {{ selectedRequest?.solicitanteNome }}
-              </div>
-            </div>
-
-            <div class="col-4">
-              <div class="field-label">Setor</div>
-              <div class="field-value">
-                {{ selectedRequest?.setorNome }}
-              </div>
-            </div>
-
-            <div class="col-4">
-              <div class="field-label">Data</div>
-              <div class="field-value">
-                {{ formatDate(selectedRequest?.createdAt) }}
-              </div>
-            </div>
-
-            <!-- Quantidade -->
-            <div class="col-4">
-              <div class="field-label">Quantidade</div>
-              <div class="field-value">
-                {{ selectedRequest?.quantidade }}
-              </div>
-            </div>
-
-            <!-- Valor -->
-            <div class="col-4">
-              <div class="field-label">Valor Total</div>
-              <div class="field-value text-primary text-weight-bold">
-                {{
-                  Number(selectedRequest?.valorTotal || 0).toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })
-                }}
-              </div>
-            </div>
-
-            <!-- Link -->
-            <div class="col-4">
-              <div class="field-label">Produto</div>
-              <a
-                :href="formatUrl(selectedRequest?.produtoUrl)"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-primary text-weight-medium"
-              >
-                Abrir link
-              </a>
-            </div>
-
-            <!-- Justificativa -->
-            <div class="col-12">
-              <div class="field-label">Justificativa</div>
-
-              <q-card flat bordered class="bg-grey-1">
-                <q-card-section>
-                  {{ selectedRequest?.justificativa }}
-                </q-card-section>
-              </q-card>
-            </div>
-          </div>
-        </q-card-section>
-
-        <!-- FOOTER -->
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Fechar" color="primary" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
@@ -335,9 +228,6 @@ const { getRequests, deleteRequest } = useRequests()
 const loading = ref(false)
 const rows = ref([])
 const search = ref('')
-
-const detailsDialog = ref(false)
-const selectedRequest = ref(null)
 
 const columns = [
   { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
@@ -385,9 +275,9 @@ const loadRequests = async () => {
   }
 }
 
-const openDetails = (row) => {
-  selectedRequest.value = row
-  detailsDialog.value = true
+/* 🔥 NOVA FUNÇÃO */
+const viewDetails = (id) => {
+  router.push(`/app/buy/details/${id}`)
 }
 
 const goToNewRequest = () => {
@@ -434,31 +324,6 @@ const formatDate = (date) => {
   } catch {
     return '-'
   }
-}
-
-const getStatusColor = (status) => {
-  const map = {
-    'Em Orçamento': 'blue-5',
-    'Em Revisão': 'orange-10',
-    'Pendente Análise': 'yellow-8',
-    Deferido: 'green',
-    Indeferido: 'red',
-    'Em Espera': 'orange',
-  }
-
-  return map[status] || 'grey'
-}
-
-const formatUrl = (url) => {
-  if (!url) return '#'
-
-  // já tem http ou https
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
-  }
-
-  // adiciona https automaticamente
-  return `https://${url}`
 }
 
 onMounted(loadRequests)

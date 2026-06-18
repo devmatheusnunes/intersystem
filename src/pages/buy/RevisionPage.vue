@@ -1,225 +1,183 @@
 <template>
-  <q-page padding>
+  <q-page class="page-container">
+    <!-- TABELA -->
+    <q-card flat bordered class="table-card">
+      <q-table
+        flat
+        :rows="filteredRows"
+        :columns="columns"
+        row-key="id"
+        :loading="loading"
+        :pagination="{ rowsPerPage: 10 }"
+      >
+        <!-- TOP -->
+        <template #top>
+          <div class="row items-center full-width q-gutter-md">
+            <div>
+              <div class="text-h6 text-weight-bold">Revisão de Solicitações</div>
 
-    <div class="text-h5 q-mb-md">
-      Revisão de Solicitações
-    </div>
+              <div class="text-caption text-grey-7">Revise e envie solicitações para análise</div>
+            </div>
 
-    <q-table flat bordered row-key="id" :rows="rows" :columns="columns" :loading="loading">
+            <q-space />
 
-      <template #body-cell-actions="props">
-        <q-td align="center">
-
-          <q-btn color="primary" icon="visibility" label="Revisar" size="sm" @click="openReviewDialog(props.row)" />
-
-        </q-td>
-      </template>
-
-    </q-table>
-
-    <q-dialog v-model="reviewDialog">
-
-      <q-card style="min-width: 900px">
-
-        <q-card-section>
-          <div class="text-h6">
-            Revisão da Solicitação
+            <q-input
+              v-model="search"
+              outlined
+              dense
+              clearable
+              debounce="300"
+              placeholder="Pesquisar..."
+              style="width: 280px"
+            >
+              <template #prepend>
+                <q-icon name="search" />
+              </template>
+            </q-input>
           </div>
-        </q-card-section>
+        </template>
 
-        <q-separator />
+        <!-- PRODUTO + SOLICITANTE -->
+        <template #body-cell-titulo="props">
+          <q-td :props="props">
+            <div class="text-weight-medium">
+              {{ props.row.titulo }}
+            </div>
 
-        <q-card-section class="row q-col-gutter-md">
+            <div class="text-caption text-grey-7">
+              {{ props.row.solicitanteNome }}
+            </div>
+          </q-td>
+        </template>
 
-          <div class="col-12 col-md-4">
-            <q-input outlined readonly label="Número" v-model="selected.requestNumber" />
+        <!-- SETOR -->
+        <template #body-cell-setorNome="props">
+          <q-td :props="props">
+            {{ props.row.setorNome }}
+          </q-td>
+        </template>
+
+        <!-- VALOR -->
+        <template #body-cell-valorTotal="props">
+          <q-td :props="props">
+            {{ formatMoney(props.row.valorTotal) }}
+          </q-td>
+        </template>
+
+        <!-- AÇÕES -->
+        <template #body-cell-actions="props">
+          <q-td :props="props">
+            <q-btn
+              color="primary"
+              icon="visibility"
+              label="Revisar"
+              size="sm"
+              unelevated
+              @click="goToReview(props.row)"
+            />
+          </q-td>
+        </template>
+
+        <!-- NO DATA -->
+        <template #no-data>
+          <div class="full-width row flex-center q-pa-xl text-grey">
+            <q-icon name="assignment_late" size="40px" class="q-mr-sm" />
+            Nenhuma solicitação encontrada
           </div>
-
-          <div class="col-12 col-md-8">
-            <q-input outlined readonly label="Título" v-model="selected.titulo" />
-          </div>
-
-          <div class="col-12">
-            <q-input outlined autogrow readonly label="Descrição" v-model="selected.descricao" />
-          </div>
-
-          <div class="col-12">
-            <q-input outlined autogrow readonly label="Justificativa" v-model="selected.justificativa" />
-          </div>
-
-          <div class="col-12 col-md-4">
-            <q-input outlined readonly label="Quantidade" v-model="selected.quantidade" />
-          </div>
-
-          <div class="col-12 col-md-4">
-            <q-input outlined readonly label="Valor Unitário" :model-value="formatMoney(selected.valorUnitario)" />
-          </div>
-
-          <div class="col-12 col-md-4">
-            <q-input outlined readonly label="Valor Total" :model-value="formatMoney(selected.valorTotal)" />
-          </div>
-
-          <div class="col-12">
-            <q-input outlined readonly label="URL Produto" v-model="selected.produtoUrl" />
-          </div>
-
-          <div class="col-12">
-            <q-input outlined readonly label="Forma de Pagamento" v-model="selected.formaPagamento" />
-          </div>
-
-          <div class="col-12">
-            <q-input outlined autogrow label="Observação da Revisão" v-model="observacao" />
-          </div>
-
-        </q-card-section>
-
-        <q-separator />
-
-        <q-card-actions align="right">
-
-          <q-btn flat label="Fechar" v-close-popup />
-
-          <q-btn color="positive" icon="check" label="Enviar para Análise" @click="sendReview" />
-
-        </q-card-actions>
-
-      </q-card>
-
-    </q-dialog>
-
+        </template>
+      </q-table>
+    </q-card>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useQuasar } from 'quasar'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 import useRequests from 'src/composables/UseRequests'
-import useAuthUser from 'src/composables/UseAuthUser'
-
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
-const $q = useQuasar()
-
-const { user } = useAuthUser()
-
-const {
-  getRequests,
-  sendToAnalysis
-} = useRequests()
+const router = useRouter()
+const { getRequests } = useRequests()
 
 const loading = ref(false)
-
 const rows = ref([])
-
-const reviewDialog = ref(false)
-
-const observacao = ref('')
-
-const selected = ref({})
+const search = ref('')
 
 const columns = [
-  {
-    name: 'requestNumber',
-    label: 'Número',
-    field: 'requestNumber',
-    align: 'left'
-  },
-  {
-    name: 'titulo',
-    label: 'Título',
-    field: 'titulo'
-  },
-  {
-    name: 'solicitanteNome',
-    label: 'Solicitante',
-    field: 'solicitanteNome'
-  },
-  {
-    name: 'setorNome',
-    label: 'Setor',
-    field: 'setorNome'
-  },
-  {
-    name: 'valorTotal',
-    label: 'Valor Total',
-    field: 'valorTotal'
-  },
-  {
-    name: 'actions',
-    label: 'Ações',
-    field: 'actions',
-    align: 'center'
-  }
+  { name: 'requestNumber', label: 'Número', field: 'requestNumber' },
+  { name: 'titulo', label: 'Produto', field: 'titulo' },
+  { name: 'setorNome', label: 'Setor', field: 'setorNome' },
+  { name: 'valorTotal', label: 'Valor', field: 'valorTotal' },
+  { name: 'actions', label: 'Ações', field: 'actions', align: 'center' },
 ]
 
-const loadRequests = async () => {
+const filteredRows = computed(() => {
+  if (!search.value) return rows.value
 
+  return rows.value.filter((item) =>
+    item.titulo?.toLowerCase().includes(search.value.toLowerCase()),
+  )
+})
+
+// 🚀 NAVEGAÇÃO NOVA
+const goToReview = (request) => {
+  router.push(`/app/buy/revisiondetail/${request.id}?mode=review`)
+}
+
+const loadRequests = async () => {
   loading.value = true
 
   try {
-
     const requests = await getRequests()
 
-    rows.value = requests.filter(
-      item =>
-        item.status === REQUEST_STATUS.REVISION
-    )
-
+    rows.value = requests.filter((item) => item.status === REQUEST_STATUS.REVISION)
   } finally {
     loading.value = false
   }
 }
 
-const openReviewDialog = (request) => {
-
-  selected.value = request
-
-  observacao.value = ''
-
-  reviewDialog.value = true
-}
-
-const sendReview = async () => {
-
-  try {
-
-    await sendToAnalysis({
-      request: selected.value,
-
-      user: user.value,
-
-      observacao: observacao.value
-    })
-
-    $q.notify({
-      type: 'positive',
-      message: 'Solicitação enviada para análise'
-    })
-
-    reviewDialog.value = false
-
-    await loadRequests()
-
-  } catch (error) {
-
-    console.error(error)
-
-    $q.notify({
-      type: 'negative',
-      message: 'Erro ao enviar para análise'
-    })
-  }
-}
-
 const formatMoney = (value) => {
-
-  return Number(value || 0)
-    .toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })
+  return Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })
 }
 
 onMounted(loadRequests)
 </script>
+
+<style scoped>
+.page-container {
+  padding: 24px;
+  background: #f5f7fb;
+  min-height: 100%;
+}
+
+.table-card {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+:deep(.q-table thead tr th) {
+  background: #f3f4f6;
+  border-bottom: 2px solid #cfd6df;
+  font-weight: 600;
+}
+
+:deep(.q-table tbody tr td) {
+  border-bottom: 1px solid #cfd6df;
+}
+
+:deep(.q-table tbody tr:hover) {
+  background: #f8fafc;
+}
+
+:deep(.q-table__container) {
+  border: 1px solid #cfd6df;
+}
+
+:deep(.q-table tbody tr:last-child td) {
+  border-bottom: none;
+}
+</style>

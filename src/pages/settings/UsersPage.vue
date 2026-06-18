@@ -1,40 +1,108 @@
 <template>
-  <q-page padding>
-    <div class="row items-center justify-between q-mb-md">
-      <div class="text-h5">Cadastro de Usuários</div>
+  <q-page class="page-container">
+    <!-- KPIs -->
+    <div class="row q-col-gutter-md q-mb-lg">
+      <div class="col-12 col-sm-6 col-md-4">
+        <q-card flat bordered class="kpi-card">
+          <q-card-section>
+            <div class="text-caption text-grey-7">Total</div>
+            <div class="text-h4 text-weight-bold">
+              {{ stats.total }}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
 
-      <q-btn color="primary" icon="add" label="Novo Usuário" @click="goToNew" />
+      <div class="col-12 col-sm-6 col-md-4">
+        <q-card flat bordered class="kpi-card">
+          <q-card-section>
+            <div class="text-caption text-grey-7">Ativos</div>
+            <div class="text-h4 text-positive text-weight-bold">
+              {{ stats.ativos }}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-12 col-sm-6 col-md-4">
+        <q-card flat bordered class="kpi-card">
+          <q-card-section>
+            <div class="text-caption text-grey-7">Inativos</div>
+            <div class="text-h4 text-negative text-weight-bold">
+              {{ stats.inativos }}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
     </div>
 
-    <q-card flat bordered>
-      <q-card-section>
-        <div class="row q-col-gutter-md">
-          <div class="col-12 col-md-4">
-            <q-input v-model="filter" outlined dense label="Pesquisar" clearable />
-          </div>
-        </div>
-      </q-card-section>
-
-      <q-separator />
-
+    <!-- TABELA -->
+    <q-card flat bordered class="table-card">
       <q-table
-        :rows="users"
+        flat
+        :rows="filteredUsers"
         :columns="columns"
         row-key="id"
-        :filter="filter"
-        flat
         :loading="loading"
+        :pagination="{ rowsPerPage: 10 }"
       >
-        <!-- STATUS -->
-        <template #body-cell-status="props">
+        <!-- TOP -->
+        <template #top>
+          <div class="row items-center full-width q-gutter-md">
+            <div>
+              <div class="text-h6 text-weight-bold">Usuários</div>
+
+              <div class="text-caption text-grey-7">Gerencie os usuários do sistema</div>
+            </div>
+
+            <q-space />
+
+            <q-input
+              v-model="filter"
+              outlined
+              dense
+              clearable
+              debounce="300"
+              placeholder="Pesquisar..."
+              style="width: 280px"
+            >
+              <template #prepend>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+
+            <q-btn color="dark" icon="add" label="Novo Usuário" unelevated @click="goToNew" />
+          </div>
+        </template>
+
+        <!-- Nome + Email -->
+        <template #body-cell-nome="props">
           <q-td :props="props">
-            <q-chip :color="props.row.ativo ? 'positive' : 'negative'" text-color="white">
-              {{ props.row.ativo ? 'Ativo' : 'Inativo' }}
-            </q-chip>
+            <div class="text-weight-medium">
+              {{ props.row.nome }}
+            </div>
+
+            <div class="text-caption text-grey-7">
+              {{ props.row.email }}
+            </div>
           </q-td>
         </template>
 
-        <!-- PERMISSÕES -->
+        <!-- Setor -->
+        <template #body-cell-setor="props">
+          <q-td :props="props">
+            {{ props.row.setor }}
+          </q-td>
+        </template>
+
+        <!-- Tipo -->
+        <template #body-cell-role="props">
+          <q-td :props="props">
+            {{ props.row.role }}
+          </q-td>
+        </template>
+
+        <!-- Permissões -->
         <template #body-cell-permissions="props">
           <q-td :props="props">
             <q-chip color="primary" text-color="white">
@@ -43,11 +111,30 @@
           </q-td>
         </template>
 
-        <!-- AÇÕES -->
+        <!-- Status -->
+        <template #body-cell-status="props">
+          <q-td :props="props">
+            <q-chip :color="props.row.ativo ? 'positive' : 'negative'" text-color="white" dense>
+              {{ props.row.ativo ? 'Ativo' : 'Inativo' }}
+            </q-chip>
+          </q-td>
+        </template>
+
+        <!-- Ações -->
         <template #body-cell-actions="props">
           <q-td :props="props">
-            <q-btn flat round icon="edit" color="primary" @click="goToEdit(props.row.id)" />
+            <q-btn flat round color="primary" icon="edit" @click="goToEdit(props.row.id)">
+              <q-tooltip>Editar</q-tooltip>
+            </q-btn>
           </q-td>
+        </template>
+
+        <!-- No data -->
+        <template #no-data>
+          <div class="full-width row flex-center q-pa-xl text-grey">
+            <q-icon name="people" size="40px" class="q-mr-sm" />
+            Nenhum usuário encontrado
+          </div>
         </template>
       </q-table>
     </q-card>
@@ -55,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import useApi from 'src/composables/UseApi.js'
@@ -69,20 +156,34 @@ const roles = ref([])
 const loading = ref(false)
 
 const columns = [
-  { name: 'nome', label: 'Nome', field: 'nome', align: 'left' },
-  { name: 'email', label: 'Email', field: 'email', align: 'left' },
-  { name: 'setor', label: 'Setor', field: 'setor', align: 'left' },
-  { name: 'role', label: 'Tipo', field: 'role', align: 'left' },
+  { name: 'nome', label: 'Usuário', field: 'nome', align: 'left' },
+  { name: 'setor', label: 'Setor', field: 'setor' },
+  { name: 'role', label: 'Tipo', field: 'role' },
   { name: 'permissions', label: 'Permissões', align: 'center' },
   { name: 'status', label: 'Status', align: 'center' },
   { name: 'actions', label: 'Ações', align: 'center' },
 ]
 
+const stats = computed(() => ({
+  total: users.value.length,
+  ativos: users.value.filter((u) => u.ativo).length,
+  inativos: users.value.filter((u) => !u.ativo).length,
+}))
+
+const filteredUsers = computed(() => {
+  if (!filter.value) return users.value
+
+  return users.value.filter(
+    (user) =>
+      user.nome?.toLowerCase().includes(filter.value.toLowerCase()) ||
+      user.email?.toLowerCase().includes(filter.value.toLowerCase()),
+  )
+})
+
 const loadData = async () => {
   try {
     loading.value = true
 
-    // 🔥 usando seu useApi corretamente (Firestore)
     const usersData = await api.list('users')
     const rolesData = await api.list('roles')
 
@@ -108,7 +209,49 @@ const goToEdit = (id) => {
   router.push(`/app/settings/edit-perfil/${id}`)
 }
 
-onMounted(() => {
-  loadData()
-})
+onMounted(loadData)
 </script>
+
+<style scoped>
+.page-container {
+  padding: 24px;
+  background: #f5f7fb;
+  min-height: 100%;
+}
+
+.kpi-card {
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+}
+
+.table-card {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+:deep(.q-table thead tr th) {
+  background: #f3f4f6;
+  border-bottom: 2px solid #cfd6df;
+  font-weight: 600;
+}
+
+:deep(.q-table tbody tr td) {
+  border-bottom: 1px solid #cfd6df;
+}
+
+:deep(.q-table tbody tr:hover) {
+  background: #f8fafc;
+}
+
+:deep(.q-table__container) {
+  border: 1px solid #cfd6df;
+}
+
+:deep(.q-table tbody tr:last-child td) {
+  border-bottom: none;
+}
+</style>

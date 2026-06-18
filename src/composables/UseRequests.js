@@ -1,4 +1,4 @@
-import { collection, getDocs } from 'firebase/firestore'
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from 'src/boot/firebase'
 
 import useApi from 'src/composables/UseApi'
@@ -12,9 +12,13 @@ export default function useRequests() {
 
   const COLLECTION = 'requestsbuy'
 
-  const getUserId = (user) => user?.userId || user?.uid || ''
+  const getUserId = (user) => {
+    return user?.id || user?.userId || user?.uid || user?._id || ''
+  }
 
-  const getUserName = (user) => user?.nome || user?.displayName || user?.email || 'Usuário'
+  const getUserName = (user) => {
+    return user?.nome || user?.name || user?.displayName || 'Usuário'
+  }
 
   const getUserEmail = (user) => user?.email || ''
 
@@ -26,12 +30,16 @@ export default function useRequests() {
     return `REQ-${String(nextNumber).padStart(6, '0')}`
   }
 
-  const createHistoryEntry = (status, usuarioId, usuarioNome, observacao = '') => ({
+  const createHistoryEntry = (status, user, observacao = '') => ({
     status,
-    usuarioId: usuarioId || '',
-    usuarioNome: usuarioNome || '',
+
+    userId: getUserId(user),
+    userName: getUserName(user),
+    userEmail: getUserEmail(user),
+
     observacao,
-    data: new Date(),
+
+    createdAt: new Date(),
   })
 
   const getRequests = async () => {
@@ -63,38 +71,50 @@ export default function useRequests() {
   const createRequest = async ({ requestData, user }) => {
     const requestNumber = await generateRequestNumber()
 
-    const initialStatus = requestData.isEletronico ? REQUEST_STATUS.BUDGET : REQUEST_STATUS.REVISION
-
     const payload = {
       ...createRequestModel(),
-
       ...requestData,
 
       requestNumber,
 
-      status: initialStatus,
+      status: requestData.status, // 👈 usa o que veio da tela
 
       solicitanteId: getUserId(user),
-
       solicitanteNome: getUserName(user),
-
       solicitanteEmail: getUserEmail(user),
 
       createdAt: new Date(),
-
       updatedAt: new Date(),
 
-      historico: [
-        createHistoryEntry(initialStatus, getUserId(user), getUserName(user), 'Solicitação criada'),
-      ],
+      historico: [createHistoryEntry(requestData.status, user, 'Solicitação criada')],
     }
 
     return await api.post(COLLECTION, payload)
   }
 
-  const updateRequest = async (id, data) => {
-    return await api.update(COLLECTION, id, {
-      ...data,
+  const updateRequest = async (id, requestData, user) => {
+    const ref = doc(db, COLLECTION, id)
+
+    const current = await getRequestById(id)
+
+    const statusChanged = current.status !== requestData.status
+
+    let historico = current.historico || []
+
+    if (statusChanged) {
+      historico = [
+        ...historico,
+        createHistoryEntry(
+          requestData.status,
+          user,
+          `Status alterado de "${current.status}" para "${requestData.status}"`,
+        ),
+      ]
+    }
+
+    await updateDoc(ref, {
+      ...requestData,
+      historico,
       updatedAt: new Date(),
     })
   }
@@ -104,17 +124,17 @@ export default function useRequests() {
   }
 
   const changeStatus = async ({ request, newStatus, user, observacao = '', extraData = {} }) => {
-    const historico = [
-      ...(request.historico || []),
+    const current = await getRequestById(request.id) // 🔥 garante histórico atualizado
 
-      createHistoryEntry(newStatus, getUserId(user), getUserName(user), observacao),
+    const historico = [
+      ...(current?.historico || []),
+
+      createHistoryEntry(newStatus, user, observacao),
     ]
 
     return await updateRequest(request.id, {
       ...extraData,
-
       status: newStatus,
-
       historico,
     })
   }
@@ -269,7 +289,7 @@ export default function useRequests() {
     return await changeStatus({
       request,
 
-      newStatus: REQUEST_STATUS.PENDING_ANALYSIS,
+      newStatus: REQUEST_STATUS.WAITING,
 
       user,
 
@@ -358,14 +378,7 @@ export default function useRequests() {
 
       updatedAt: new Date(),
 
-      historico: [
-        createHistoryEntry(
-          initialStatus,
-          getUserId(user),
-          getUserName(user),
-          'Solicitação recriada',
-        ),
-      ],
+      historico: [createHistoryEntry(initialStatus, user, 'Solicitação criada')],
     }
 
     return await api.post(COLLECTION, payload)

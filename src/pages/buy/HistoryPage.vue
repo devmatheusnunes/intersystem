@@ -133,7 +133,7 @@
           <q-td :props="props">
             <q-chip
               v-if="props.row.status === REQUEST_STATUS.APPROVED"
-              color="green"
+              color="approved"
               text-color="white"
               icon="check_circle"
             >
@@ -142,7 +142,7 @@
 
             <q-chip
               v-else-if="props.row.status === REQUEST_STATUS.REJECTED"
-              color="red"
+              color="rejected"
               text-color="white"
               icon="cancel"
             >
@@ -151,7 +151,7 @@
 
             <q-chip
               v-else-if="props.row.status === REQUEST_STATUS.WAITING"
-              color="orange"
+              color="waiting"
               text-color="white"
               icon="pause_circle"
             >
@@ -160,7 +160,7 @@
 
             <q-chip
               v-else-if="props.row.status === REQUEST_STATUS.FINISHED"
-              color="primary"
+              color="finished"
               text-color="white"
               icon="task_alt"
             >
@@ -239,6 +239,7 @@ import { useRouter } from 'vue-router'
 import useNotify from 'src/composables/UseNotify'
 import useRequests from 'src/composables/UseRequests'
 import usePermissions from 'src/composables/UsePermissions'
+import useAuthUser from 'src/composables/UseAuthUser' // ✅ ADICIONADO
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
@@ -250,59 +251,25 @@ const search = ref('')
 
 const { notifyError, notifySuccess } = useNotify()
 const { canViewItem } = usePermissions()
+const { user } = useAuthUser() // ✅ AQUI
 
 const { getRequests, requestReanalysis, reinforceRequest, duplicateRequest } = useRequests()
 
 const stats = computed(() => ({
   total: rows.value.length,
   approved: rows.value.filter((i) => i.status === REQUEST_STATUS.APPROVED).length,
-
   rejected: rows.value.filter((i) => i.status === REQUEST_STATUS.REJECTED).length,
-
   waiting: rows.value.filter((i) => i.status === REQUEST_STATUS.WAITING).length,
-
   finished: rows.value.filter((i) => i.status === REQUEST_STATUS.FINISHED).length,
 }))
 
 const columns = [
-  {
-    name: 'titulo',
-    label: 'Produto',
-    field: 'titulo',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'valorTotal',
-    label: 'Valor',
-    field: 'valorTotal',
-    align: 'right',
-    sortable: true,
-  },
-  {
-    name: 'setorNome',
-    label: 'Setor',
-    field: 'setorNome',
-    sortable: true,
-  },
-  {
-    name: 'status',
-    label: 'Status',
-    field: 'status',
-    align: 'center',
-  },
-  {
-    name: 'createdAt',
-    label: 'Data',
-    field: 'createdAt',
-    align: 'center',
-  },
-  {
-    name: 'actions',
-    label: 'Ações',
-    field: 'actions',
-    align: 'center',
-  },
+  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
+  { name: 'valorTotal', label: 'Valor', field: 'valorTotal', align: 'right', sortable: true },
+  { name: 'setorNome', label: 'Setor', field: 'setorNome', sortable: true },
+  { name: 'status', label: 'Status', field: 'status', align: 'center' },
+  { name: 'createdAt', label: 'Data', field: 'createdAt', align: 'center' },
+  { name: 'actions', label: 'Ações', field: 'actions', align: 'center' },
 ]
 
 const filteredRows = computed(() => {
@@ -350,7 +317,10 @@ const canRequestReanalysis = (row) => {
 
 const handleReanalysis = async (request) => {
   try {
-    await requestReanalysis({ request })
+    await requestReanalysis({
+      request,
+      user: user.value, // ✅ CORREÇÃO
+    })
 
     notifySuccess('Solicitação enviada para reanálise')
 
@@ -362,7 +332,10 @@ const handleReanalysis = async (request) => {
 
 const handleReinforce = async (request) => {
   try {
-    await reinforceRequest({ request })
+    await reinforceRequest({
+      request,
+      user: user.value, // ✅ CORREÇÃO (ERA O BUG)
+    })
 
     notifySuccess('Solicitação enviada com prioridade')
 
@@ -374,7 +347,10 @@ const handleReinforce = async (request) => {
 
 const handleDuplicate = async (request) => {
   try {
-    await duplicateRequest({ request })
+    await duplicateRequest({
+      request,
+      user: user.value, // ✅ CORREÇÃO
+    })
 
     notifySuccess('Nova solicitação criada')
 
@@ -391,7 +367,6 @@ const formatDate = (date) => {
 
   try {
     const value = date?.toDate ? date.toDate() : new Date(date)
-
     return value.toLocaleDateString('pt-BR')
   } catch {
     return '-'

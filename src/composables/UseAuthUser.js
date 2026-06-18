@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 import {
   signInWithEmailAndPassword,
@@ -12,10 +12,13 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 
 import { auth, db } from 'src/boot/firebase'
 
-const user = ref(null)
+const firebaseUser = ref(null)
 const profile = ref(null)
 const loading = ref(true)
 
+/**
+ * 🔥 MANTÉM SUA ESTRUTURA ORIGINAL (COMPATÍVEL COM BANCO)
+ */
 const loadUserProfile = async (uid) => {
   try {
     const usersRef = collection(db, 'users')
@@ -26,7 +29,6 @@ const loadUserProfile = async (uid) => {
 
     if (querySnapshot.empty) {
       console.warn('Usuário não encontrado para UID:', uid)
-
       profile.value = null
       return
     }
@@ -58,23 +60,45 @@ const loadUserProfile = async (uid) => {
       ...userData,
 
       permissions: roleData?.permissions || [],
-
       visibilityType: roleData?.visibilityType || 'own',
-
       visibleSectors: roleData?.visibleSectors || [],
     }
   } catch (error) {
     console.error('Erro ao carregar perfil:', error)
-
     profile.value = null
   }
 }
 
-onAuthStateChanged(auth, async (firebaseUser) => {
-  user.value = firebaseUser
+/**
+ * 🔥 USER PADRONIZADO (RESOLVE O HISTÓRICO)
+ */
+const user = computed(() => {
+  if (!firebaseUser.value) return null
 
-  if (firebaseUser) {
-    await loadUserProfile(firebaseUser.uid)
+  return {
+    id: firebaseUser.value.uid,
+    uid: firebaseUser.value.uid,
+
+    nome: profile.value?.nome || '',
+    name: profile.value?.nome || '',
+
+    email: firebaseUser.value.email || '',
+
+    // mantém compatibilidade com resto do sistema
+    permissions: profile.value?.permissions || [],
+    visibilityType: profile.value?.visibilityType || 'own',
+    visibleSectors: profile.value?.visibleSectors || [],
+  }
+})
+
+/**
+ * 🔥 OBSERVER GLOBAL
+ */
+onAuthStateChanged(auth, async (fbUser) => {
+  firebaseUser.value = fbUser
+
+  if (fbUser) {
+    await loadUserProfile(fbUser.uid)
   } else {
     profile.value = null
   }
@@ -93,6 +117,8 @@ export default function useAuthUser() {
 
   const logout = async () => {
     await signOut(auth)
+    firebaseUser.value = null
+    profile.value = null
   }
 
   const register = async ({ email, password }) => {
@@ -106,18 +132,15 @@ export default function useAuthUser() {
   }
 
   const reloadProfile = async () => {
-    if (!user.value?.uid) {
-      return
-    }
-
-    await loadUserProfile(user.value.uid)
+    if (!firebaseUser.value?.uid) return
+    await loadUserProfile(firebaseUser.value.uid)
   }
 
-  const isLoggedIn = () => !!user.value
+  const isLoggedIn = () => !!firebaseUser.value
 
   return {
-    user,
-    profile,
+    user, // 🔥 USAR ESSE NO SISTEMA (CORRIGIDO)
+    profile, // mantém compatibilidade com telas antigas
     loading,
 
     login,
@@ -125,7 +148,6 @@ export default function useAuthUser() {
     register,
 
     sendPasswordReset,
-
     reloadProfile,
 
     isLoggedIn,
