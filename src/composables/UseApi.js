@@ -11,9 +11,22 @@ import {
   limit,
   startAfter,
   orderBy,
+  setDoc,
 } from 'firebase/firestore'
 
 import { db } from 'src/boot/firebase'
+
+const set = async (collectionName, id, data) => {
+  const documentRef = doc(db, collectionName, id)
+
+  await setDoc(documentRef, {
+    ...data,
+    createdAt: new Date(),
+    updatedAt: null,
+  })
+
+  return true
+}
 
 export default function useApi() {
   const list = async (collectionName) => {
@@ -140,5 +153,6 @@ export default function useApi() {
     find,
     findMany,
     paginate,
+    set,
   }
 }

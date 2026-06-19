@@ -148,6 +148,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import useApi from 'src/composables/UseApi'
 
 import useAuthUser from 'src/composables/UseAuthUser'
 import useNotify from 'src/composables/UseNotify'
@@ -161,48 +162,79 @@ const route = useRoute()
 const router = useRouter()
 
 const formRef = ref(null)
+const api = useApi()
 
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(Number(value || 0))
+// =========================
+// CATEGORIAS
+// =========================
+const categoryOptions = ref([])
+const categoriesRaw = ref([])
+
+const loadCategories = async () => {
+  const data = await api.list('request_categories')
+
+  const ativos = data.filter((cat) => cat.ativo)
+
+  categoriesRaw.value = ativos
+
+  categoryOptions.value = ativos.map((cat) => ({
+    label: cat.nome,
+    value: cat.name || cat.nome, // 🔥 agora usa name como base
+  }))
 }
 
-// COMPOSABLES
-const { profile } = useAuthUser()
-const { notifySuccess, notifyError, notifyWarning } = useNotify()
-const { createRequest, updateRequest, getRequestById, generateRequestNumber } = useRequests()
+// =========================
+// FORM
+// =========================
+const form = reactive(createRequestModel())
 
-// STATE
 const requestId = computed(() => route.params.id)
 const isEditing = computed(() => !!requestId.value)
 
-const form = reactive(createRequestModel())
-
+// =========================
+// HELPERS
+// =========================
 const required = (label) => (val) => !!val || `Informe ${label}`
 
 const requiredNumber = (label) => (val) =>
   (val !== null && val !== undefined && val !== '') || `Informe ${label}`
 
 const validUrl = (val) => {
-  if (!val) return true // deixa required cuidar disso
+  if (!val) return true
   return /^https?:\/\/.+/.test(val) || 'URL inválida (use http ou https)'
 }
 
-// CATEGORIAS
-const categoryOptions = [
-  { label: 'Eletrônico', value: 'eletronico' },
-  { label: 'Material de Escritório', value: 'escritorio' },
-  { label: 'Equipamento', value: 'equipamento' },
-  { label: 'Outros', value: 'outros' },
-]
+const formatCurrency = (value) => {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })
+}
 
-// 🔥 REGRA PRINCIPAL
-const isEletronico = computed(() => form.categoria === 'eletronico')
+// =========================
+// CATEGORIA SELECIONADA
+// =========================
+const selectedCategory = computed(() => {
+  if (!form.categoria) return null
+
+  return categoriesRaw.value.find(
+    (c) => (c.name || c.nome) === form.categoria, // 🔥 base em NAME
+  )
+})
+
+// =========================
+// REGRA PRINCIPAL (ELETRÔNICO)
+// =========================
+const isEletronico = computed(() => {
+  const name = selectedCategory.value?.name || selectedCategory.value?.nome
+  return (name || '').toLowerCase() === 'eletrônico'
+})
+
 const showFinanceiro = computed(() => !isEletronico.value)
 
-// 🧮 TOTAL AUTOMÁTICO
+// =========================
+// TOTAL AUTOMÁTICO
+// =========================
 watch(
   () => [form.valorUnitario, form.quantidade],
   () => {
@@ -216,7 +248,13 @@ watch(
   { immediate: true },
 )
 
-// 👤 USER
+// =========================
+// USER
+// =========================
+const { profile } = useAuthUser()
+const { notifySuccess, notifyError, notifyWarning } = useNotify()
+const { createRequest, updateRequest, getRequestById, generateRequestNumber } = useRequests()
+
 watch(
   profile,
   async (user) => {
@@ -235,7 +273,9 @@ watch(
   { immediate: true },
 )
 
-// LOAD (edição)
+// =========================
+// LOAD REQUEST (EDIÇÃO)
+// =========================
 const loadRequest = async () => {
   if (!requestId.value) return
 
@@ -248,23 +288,34 @@ const loadRequest = async () => {
       return
     }
 
-    Object.assign(form, request)
+    // 🔥 garante que categoria exista mesmo sem schema antigo
+    Object.assign(form, {
+      ...request,
+      categoria: request.categoria || '',
+    })
   } catch (err) {
     console.error(err)
     notifyError('Erro ao carregar')
   }
 }
 
-// STATUS AUTOMÁTICO
+// =========================
+// STATUS
+// =========================
 const getStatusByCategory = () => {
-  return form.categoria === 'eletronico' ? REQUEST_STATUS.BUDGET : REQUEST_STATUS.REVISION
+  if (isEletronico.value) return REQUEST_STATUS.BUDGET
+  return REQUEST_STATUS.REVISION
 }
 
-// 🧹 REMOVE UNDEFINED
+// =========================
+// CLEAN
+// =========================
 const cleanPayload = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
 
-// 💾 SAVE
+// =========================
+// SAVE
+// =========================
 const save = async () => {
   const valid = await formRef.value.validate()
 
@@ -281,7 +332,6 @@ const save = async () => {
       justificativa: form.justificativa,
       quantidade: Number(form.quantidade),
 
-      // 🔥 CAMPOS CONDICIONAIS
       produtoUrl: showFinanceiro.value ? form.produtoUrl || null : null,
       valorUnitario: showFinanceiro.value ? Number(form.valorUnitario || 0) : null,
       valorTotal: showFinanceiro.value ? Number(form.valorTotal || 0) : null,
@@ -293,7 +343,6 @@ const save = async () => {
       setorNome: form.setorNome,
 
       requestNumber: form.requestNumber,
-
       status: getStatusByCategory(),
 
       updatedAt: new Date(),
@@ -317,7 +366,9 @@ const save = async () => {
   }
 }
 
+// =========================
 // RESET
+// =========================
 const resetForm = () => {
   form.titulo = ''
   form.descricao = ''
@@ -330,12 +381,20 @@ const resetForm = () => {
   form.valorTotal = 0
 }
 
-// BACK
+// =========================
+// NAV
+// =========================
 const returnPage = () => {
   router.push('/app/buy/requests')
 }
 
-onMounted(loadRequest)
+// =========================
+// INIT
+// =========================
+onMounted(() => {
+  loadRequest()
+  loadCategories()
+})
 </script>
 
 <style scoped>

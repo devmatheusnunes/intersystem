@@ -105,6 +105,18 @@ export const SYSTEM_MODULES = [
   },
 
   {
+    group: 'COMPRAS',
+    key: 'preferences',
+    title: 'Preferencias',
+    icon: 'settings',
+    route: '/app/buy/preferences',
+    showInMenu: true,
+    order: 15,
+    menuPermission: 'requests.menu',
+    permissions: [],
+  },
+
+  {
     group: 'CONFIGURAÇÕES',
     key: 'users',
     title: 'Usuários',

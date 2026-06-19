@@ -140,6 +140,15 @@ const routes = [
         },
       },
 
+      {
+        path: 'buy/preferences',
+        name: 'buy-preferences',
+        component: () => import('pages/buy/SettingsRequestPage.vue'),
+        meta: {
+          permission: 'budget.finish',
+        },
+      },
+
       // =====================
       // CONFIGURAÇÕES
       // =====================
