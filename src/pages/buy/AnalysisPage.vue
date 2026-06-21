@@ -17,7 +17,7 @@
         <q-card flat bordered>
           <q-card-section>
             <div class="text-caption text-grey">Pendente de Análise</div>
-            <div class="text-h5 text-yellow-8 text-weight-bold">
+            <div class="text-h5 text-analysis text-weight-bold">
               {{ pendingCount }}
             </div>
           </q-card-section>
@@ -28,7 +28,7 @@
         <q-card flat bordered>
           <q-card-section>
             <div class="text-caption text-grey">Em Reanálise</div>
-            <div class="text-h5 text-orange text-weight-bold">
+            <div class="text-h5 text-reanalysis text-weight-bold">
               {{ reanalysisCount }}
             </div>
           </q-card-section>
@@ -39,7 +39,7 @@
         <q-card flat bordered>
           <q-card-section>
             <div class="text-caption text-grey">Em Espera</div>
-            <div class="text-h5 text-deep-orange text-weight-bold">
+            <div class="text-h5 text-waiting text-weight-bold">
               {{ waitingCount }}
             </div>
           </q-card-section>

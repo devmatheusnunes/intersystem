@@ -197,7 +197,7 @@
 
             <!-- Reforço -->
             <q-btn
-              v-if="props.row.status === REQUEST_STATUS.WAITING"
+              v-if="canReinforce(props.row)"
               flat
               round
               color="orange"
@@ -242,6 +242,9 @@ import usePermissions from 'src/composables/UsePermissions'
 import useAuthUser from 'src/composables/UseAuthUser' // ✅ ADICIONADO
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
+import useApi from 'src/composables/UseApi'
+
+const api = useApi()
 
 const router = useRouter()
 
@@ -251,7 +254,79 @@ const search = ref('')
 
 const { notifyError, notifySuccess } = useNotify()
 const { canViewItem } = usePermissions()
-const { user } = useAuthUser() // ✅ AQUI
+const { profile } = useAuthUser() // ✅ AQUI
+
+const settings = ref({
+  indeferido: { tempo: 0, limite: 0 },
+  espera: { tempo: 0, limite: 0 },
+})
+
+const loadSettings = async () => {
+  try {
+    const data = await api.getById('request_settings', 'global')
+
+    if (data) {
+      settings.value = {
+        indeferido: data.indeferido || { tempo: 0, limite: 0 },
+        espera: data.espera || { tempo: 0, limite: 0 },
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao carregar settings', err)
+  }
+}
+
+const hoursBetween = (date) => {
+  if (!date) return Infinity
+
+  const d = date?.toDate ? date.toDate() : new Date(date)
+  const now = new Date()
+
+  return (now - d) / (1000 * 60 * 60)
+}
+
+const canRequestReanalysis = (row) => {
+  if (row.status !== REQUEST_STATUS.REJECTED) return false
+
+  const limite = settings.value.indeferido.limite
+  const tempoMin = settings.value.indeferido.tempo
+
+  const tentativas = row.reanalises || 0
+
+  // 🚫 limite atingido
+  if (limite > 0 && tentativas >= limite) return false
+
+  // 📅 pegar data da análise
+  const analyzedAt = row?.analise?.analyzedAt
+
+  const horas = hoursBetween(analyzedAt)
+
+  // ⏳ ainda não passou tempo mínimo
+  if (tempoMin > 0 && horas < tempoMin) return false
+
+  return true
+}
+
+const canReinforce = (row) => {
+  if (row.status !== REQUEST_STATUS.WAITING) return false
+
+  const limite = settings.value.espera.limite
+  const tempoMin = settings.value.espera.tempo
+
+  const tentativas = row.reforcos || 0
+
+  // 🚫 limite atingido
+  if (limite > 0 && tentativas >= limite) return false
+
+  const createdAt = row.createdAt
+
+  const horas = hoursBetween(createdAt)
+
+  // ⏳ ainda não passou tempo mínimo
+  if (tempoMin > 0 && horas < tempoMin) return false
+
+  return true
+}
 
 const { getRequests, requestReanalysis, reinforceRequest, duplicateRequest } = useRequests()
 
@@ -307,25 +382,18 @@ const viewRequest = (row) => {
   router.push(`/app/buy/details/${row.id}`)
 }
 
-const canRequestReanalysis = (row) => {
-  return (
-    row.status === REQUEST_STATUS.REJECTED &&
-    !row.reanalysisRequested &&
-    (row.reanalises || 0) === 0
-  )
-}
-
 const handleReanalysis = async (request) => {
   try {
     await requestReanalysis({
       request,
-      user: user.value, // ✅ CORREÇÃO
+      user: profile.value,
+      motivo: 'Solicitado pelo usuário', // 👈 ADICIONE ISSO
     })
 
     notifySuccess('Solicitação enviada para reanálise')
-
     loadRequests()
-  } catch {
+  } catch (err) {
+    console.error('ERRO REANALISE', err)
     notifyError('Erro ao solicitar reanálise')
   }
 }
@@ -334,7 +402,7 @@ const handleReinforce = async (request) => {
   try {
     await reinforceRequest({
       request,
-      user: user.value, // ✅ CORREÇÃO (ERA O BUG)
+      user: profile.value, // ✅ CORREÇÃO (ERA O BUG)
     })
 
     notifySuccess('Solicitação enviada com prioridade')
@@ -349,7 +417,7 @@ const handleDuplicate = async (request) => {
   try {
     await duplicateRequest({
       request,
-      user: user.value, // ✅ CORREÇÃO
+      user: profile.value, // ✅ CORREÇÃO
     })
 
     notifySuccess('Nova solicitação criada')
@@ -373,7 +441,10 @@ const formatDate = (date) => {
   }
 }
 
-onMounted(loadRequests)
+onMounted(() => {
+  loadRequests()
+  loadSettings()
+})
 </script>
 
 <style scoped>

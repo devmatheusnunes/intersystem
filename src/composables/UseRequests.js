@@ -244,7 +244,7 @@ export default function useRequests() {
         reanalysisRequested: true,
         reanalysisRequestedAt: now(),
         reanalise: {
-          motivo,
+          motivo: motivo || 'Sem descrição',
           usuarioId: getUserId(user),
           usuarioNome: getUserName(user),
           data: now(),
@@ -263,6 +263,7 @@ export default function useRequests() {
       user,
       observacao: 'Solicitação marcada como URGENTE',
       extraData: {
+        reforcos: (request.reforcos || 0) + 1, // 🔥 ESSENCIAL
         reforco: true,
         reforcoAt: now(),
         reforcadoPor: getUserId(user),

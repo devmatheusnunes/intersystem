@@ -2,7 +2,7 @@
   <q-page class="page-container">
     <!-- KPIs -->
     <div class="row q-col-gutter-md q-mb-lg">
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-12 col-sm-6 col-md">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
             <div class="text-caption text-grey-7">Total</div>
@@ -13,34 +13,44 @@
         </q-card>
       </div>
 
-      <div class="col-12 col-sm-6 col-md-3">
-        <q-card flat bordered class="kpi-card">
-          <q-card-section>
-            <div class="text-caption text-grey-7">Em Revisão</div>
-            <div class="text-h4 text-warning text-weight-bold">
-              {{ stats.revisao }}
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-12 col-sm-6 col-md">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
             <div class="text-caption text-grey-7">Em orçamento</div>
-            <div class="text-h4 text-info text-weight-bold">
+            <div class="text-h4 text-budget text-weight-bold">
               {{ stats.orcamento }}
             </div>
           </q-card-section>
         </q-card>
       </div>
 
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-12 col-sm-6 col-md">
+        <q-card flat bordered class="kpi-card">
+          <q-card-section>
+            <div class="text-caption text-grey-7">Em Revisão</div>
+            <div class="text-h4 text-revision text-weight-bold">
+              {{ stats.revisao }}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-12 col-sm-6 col-md">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
             <div class="text-caption text-grey-7">Pendente Análise</div>
-            <div class="text-h4 text-positive text-weight-bold">
+            <div class="text-h4 text-analysis text-weight-bold">
               {{ stats.analise }}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-sm-6 col-md">
+        <q-card flat bordered class="kpi-card">
+          <q-card-section>
+            <div class="text-caption text-grey-7">Em Reanálise</div>
+            <div class="text-h4 text-reanalysis text-weight-bold">
+              {{ stats.reanalise }}
             </div>
           </q-card-section>
         </q-card>
@@ -131,7 +141,7 @@
               text-color="white"
               icon="hourglass_top"
             >
-              Pendente análise
+              Pendente Análise
             </q-chip>
 
             <q-chip
@@ -140,7 +150,7 @@
               text-color="white"
               icon="request_page"
             >
-              Em orçamento
+              Em Orçamento
             </q-chip>
 
             <q-chip
@@ -150,6 +160,15 @@
               icon="grading"
             >
               Em Revisão
+            </q-chip>
+
+            <q-chip
+              v-else-if="props.row.status === REQUEST_STATUS.REANALYSIS"
+              color="reanalysis"
+              text-color="white"
+              icon="refresh"
+            >
+              Em Reanálise
             </q-chip>
 
             <q-chip v-else color="grey" text-color="white">
@@ -243,6 +262,7 @@ const stats = computed(() => ({
   revisao: rows.value.filter((i) => i.status === REQUEST_STATUS.REVISION).length,
   orcamento: rows.value.filter((i) => i.status === REQUEST_STATUS.BUDGET).length,
   analise: rows.value.filter((i) => i.status === REQUEST_STATUS.PENDING_ANALYSIS).length,
+  reanalise: rows.value.filter((i) => i.status === REQUEST_STATUS.REANALYSIS).length,
 }))
 
 const filteredRows = computed(() => {
@@ -263,6 +283,7 @@ const loadRequests = async () => {
       REQUEST_STATUS.BUDGET,
       REQUEST_STATUS.REVISION,
       REQUEST_STATUS.PENDING_ANALYSIS,
+      REQUEST_STATUS.REANALYSIS,
     ]
 
     rows.value = data
