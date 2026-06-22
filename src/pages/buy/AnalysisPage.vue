@@ -216,12 +216,12 @@ const rows = ref([])
 const search = ref('')
 
 const columns = [
-  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left' },
-  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left' },
-  { name: 'setorNome', label: 'Setor', field: 'setorNome', align: 'left' },
-  { name: 'valorTotal', label: 'Valor Total', field: 'valorTotal', align: 'left' },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
-  { name: 'produtoUrl', label: 'Produto', field: 'produtoUrl', align: 'left' },
+  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left', sortable: true },
+  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
+  { name: 'setorNome', label: 'Setor', field: 'setorNome', align: 'left', sortable: true },
+  { name: 'valorTotal', label: 'Valor Total', field: 'valorTotal', align: 'left', sortable: true },
+  { name: 'status', label: 'Status', field: 'status', align: 'left', sortable: true },
+  { name: 'produtoUrl', label: 'Produto', field: 'produtoUrl', align: 'left', sortable: true },
   { name: 'actions', label: 'Ações', field: 'actions', align: 'left' },
 ]
 

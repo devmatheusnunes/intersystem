@@ -280,7 +280,7 @@ export default function useRequests() {
       request,
       newStatus: REQUEST_STATUS.FINISHED,
       user,
-      observacao: 'Pedido finalizado',
+      observacao: request.pagamento?.observacao || 'Pagamento finalizado',
       extraData: {
         pagamento: {
           ...request.pagamento,

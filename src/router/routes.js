@@ -141,6 +141,15 @@ const routes = [
       },
 
       {
+        path: 'buy/paymentdetail/:id',
+        name: 'buy-paymentdetail',
+        component: () => import('pages/buy/PaymentDetails.vue'),
+        meta: {
+          permission: 'budget.finish',
+        },
+      },
+
+      {
         path: 'buy/preferences',
         name: 'buy-preferences',
         component: () => import('pages/buy/SettingsRequestPage.vue'),

@@ -3,9 +3,7 @@
     <!-- Lado esquerdo -->
     <div class="login-banner col-8 flex flex-center">
       <div class="text-center text-white">
-        <h2 class="text-weight-bold q-mb-sm">Sistema de Compras</h2>
-
-        <p class="text-subtitle1">Gestão inteligente de solicitações, orçamentos e aprovações.</p>
+        <q-img :src="wallpaper" fit="contain" class="wallpaper-login q-mx-auto" no-spinner />
       </div>
     </div>
 
@@ -13,6 +11,8 @@
     <div class="col flex flex-center bg-grey-2">
       <q-card flat class="login-card">
         <q-card-section class="text-center q-pb-none">
+          <q-img :src="logo" fit="contain" class="logo-login q-mx-auto" no-spinner />
+
           <h4 class="text-weight-bold q-mb-xs">Bem-vindo</h4>
 
           <p class="text-grey-7">Faça login para continuar</p>
@@ -67,6 +67,8 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import logo from 'src/assets/intersystem_full.svg'
+import wallpaper from 'src/assets/wallpaper.svg'
 
 import useAuthUser from 'src/composables/UseAuthUser.js'
 import useNotify from 'src/composables/UseNotify.js'
@@ -113,7 +115,7 @@ const handleLogin = async () => {
 }
 
 .login-banner {
-  background: linear-gradient(135deg, #007bff, #00c6ff);
+  background: linear-gradient(135deg, #02166a, #00a3fe);
 }
 
 .login-card {
@@ -129,5 +131,15 @@ const handleLogin = async () => {
   .login-banner {
     display: none;
   }
+}
+
+.logo-login {
+  width: 250px;
+  height: 250px;
+  margin-bottom: -5vh;
+}
+
+.wallpaper-login {
+  width: 50vw;
 }
 </style>

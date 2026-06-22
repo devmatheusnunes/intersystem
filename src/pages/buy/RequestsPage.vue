@@ -249,12 +249,12 @@ const rows = ref([])
 const search = ref('')
 
 const columns = [
-  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left' },
+  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left', sortable: true },
   { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
   { name: 'valorTotal', label: 'Valor', field: 'valorTotal', align: 'right', sortable: true },
   { name: 'setorNome', label: 'Setor', field: 'setorNome', sortable: true },
-  { name: 'status', label: 'Status', field: 'status', align: 'center' },
-  { name: 'createdAt', label: 'Data', field: 'createdAt', align: 'center' },
+  { name: 'status', label: 'Status', field: 'status', align: 'center', sortable: true },
+  { name: 'createdAt', label: 'Data', field: 'createdAt', align: 'center', sortable: true },
   { name: 'actions', label: 'Ações', field: 'actions', align: 'center' },
 ]
 

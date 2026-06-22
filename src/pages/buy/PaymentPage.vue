@@ -2,7 +2,7 @@
   <q-page class="page-container">
     <!-- KPI -->
     <div class="row q-col-gutter-md q-mb-md">
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md">
         <q-card flat bordered>
           <q-card-section>
             <div class="text-caption text-grey">Total</div>
@@ -13,23 +13,12 @@
         </q-card>
       </div>
 
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md">
         <q-card flat bordered>
           <q-card-section>
             <div class="text-caption text-grey">Aguardando Compra</div>
             <div class="text-h5 text-warning text-weight-bold">
               {{ pendingPaymentCount }}
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-caption text-grey">Comprados</div>
-            <div class="text-h5 text-positive text-weight-bold">
-              {{ purchasedCount }}
             </div>
           </q-card-section>
         </q-card>
@@ -134,17 +123,7 @@
                 label="Finalizar Compra"
                 size="sm"
                 unelevated
-                @click="handleFinish(props.row)"
-              />
-
-              <q-btn
-                v-else
-                flat
-                color="grey"
-                icon="visibility"
-                label="Ver"
-                size="sm"
-                @click="viewRequest(props.row)"
+                @click="goToPayment(props.row)"
               />
             </q-td>
           </q-tr>
@@ -167,25 +146,23 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import useRequests from 'src/composables/UseRequests'
-import useAuthUser from 'src/composables/UseAuthUser'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 const router = useRouter()
 
-const { profile } = useAuthUser()
-const { getRequests, finishRequest } = useRequests()
+const { getRequests } = useRequests()
 
 const loading = ref(false)
 const rows = ref([])
 const search = ref('')
 
 const columns = [
-  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left' },
-  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left' },
-  { name: 'setorNome', label: 'Setor', field: 'setorNome', align: 'left' },
-  { name: 'valorTotal', label: 'Valor Total', field: 'valorTotal', align: 'left' },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
-  { name: 'produtoUrl', label: 'Produto', field: 'produtoUrl', align: 'left' },
+  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left', sortable: true },
+  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
+  { name: 'setorNome', label: 'Setor', field: 'setorNome', align: 'left', sortable: true },
+  { name: 'valorTotal', label: 'Valor Total', field: 'valorTotal', align: 'left', sortable: true },
+  { name: 'status', label: 'Status', field: 'status', align: 'left', sortable: true },
+  { name: 'produtoUrl', label: 'Produto', field: 'produtoUrl', align: 'left', sortable: true },
   { name: 'actions', label: 'Ações', field: 'actions', align: 'left' },
 ]
 
@@ -197,10 +174,12 @@ const filteredRows = computed(() => {
   )
 })
 
+const goToPayment = (row) => {
+  router.push(`/app/buy/paymentdetail/${row.id}`)
+}
+
 /* KPI */
 const pendingPaymentCount = computed(() => rows.value.filter((r) => !r.pagamento?.comprado).length)
-
-const purchasedCount = computed(() => rows.value.filter((r) => r.pagamento?.comprado).length)
 
 /* LOAD */
 const loadRequests = async () => {
@@ -214,24 +193,6 @@ const loadRequests = async () => {
   } finally {
     loading.value = false
   }
-}
-
-/* ACTIONS */
-const handleFinish = async (request) => {
-  try {
-    await finishRequest({
-      request,
-      user: profile.value,
-    })
-
-    await loadRequests()
-  } catch (err) {
-    console.error(err)
-  }
-}
-
-const viewRequest = (row) => {
-  router.push(`/app/buy/details/${row.id}`)
 }
 
 /* UTILS */
