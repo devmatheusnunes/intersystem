@@ -86,8 +86,13 @@
         <!-- 🔥 BODY CUSTOM -->
         <template #body="props">
           <q-tr :props="props" :class="getRowClass(props.row)">
+            <!-- Código -->
+            <q-td key="requestNumber" :props="props">
+              {{ props.row.requestNumber }}
+            </q-td>
+
             <!-- PRODUTO -->
-            <q-td key="titulo" :props="props" class="text-left">
+            <q-td key="titulo" :props="props">
               <div class="row items-center q-gutter-sm text-weight-medium">
                 <!-- ÍCONE -->
                 <q-icon
@@ -211,6 +216,7 @@ const rows = ref([])
 const search = ref('')
 
 const columns = [
+  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left' },
   { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left' },
   { name: 'setorNome', label: 'Setor', field: 'setorNome', align: 'left' },
   { name: 'valorTotal', label: 'Valor Total', field: 'valorTotal', align: 'left' },

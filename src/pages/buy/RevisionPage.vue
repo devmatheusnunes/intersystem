@@ -64,6 +64,13 @@
           </q-td>
         </template>
 
+        <!-- Data -->
+        <template #body-cell-createdAt="props">
+          <q-td :props="props">
+            {{ formatDate(props.row.createdAt) }}
+          </q-td>
+        </template>
+
         <!-- AÇÕES -->
         <template #body-cell-actions="props">
           <q-td :props="props">
@@ -105,10 +112,11 @@ const rows = ref([])
 const search = ref('')
 
 const columns = [
-  { name: 'requestNumber', label: 'Número', field: 'requestNumber' },
-  { name: 'titulo', label: 'Produto', field: 'titulo' },
-  { name: 'setorNome', label: 'Setor', field: 'setorNome' },
-  { name: 'valorTotal', label: 'Valor', field: 'valorTotal' },
+  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left' },
+  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left' },
+  { name: 'setorNome', label: 'Setor', field: 'setorNome', align: 'center' },
+  { name: 'valorTotal', label: 'Valor', field: 'valorTotal', align: 'center' },
+  { name: 'createdAt', label: 'Data', field: 'createdAt', align: 'center' },
   { name: 'actions', label: 'Ações', field: 'actions', align: 'center' },
 ]
 
@@ -134,6 +142,17 @@ const loadRequests = async () => {
     rows.value = requests.filter((item) => item.status === REQUEST_STATUS.REVISION)
   } finally {
     loading.value = false
+  }
+}
+
+const formatDate = (date) => {
+  if (!date) return '-'
+
+  try {
+    const value = date?.toDate ? date.toDate() : new Date(date)
+    return value.toLocaleDateString('pt-BR')
+  } catch {
+    return '-'
   }
 }
 

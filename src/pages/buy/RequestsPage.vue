@@ -249,6 +249,7 @@ const rows = ref([])
 const search = ref('')
 
 const columns = [
+  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left' },
   { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
   { name: 'valorTotal', label: 'Valor', field: 'valorTotal', align: 'right', sortable: true },
   { name: 'setorNome', label: 'Setor', field: 'setorNome', sortable: true },
