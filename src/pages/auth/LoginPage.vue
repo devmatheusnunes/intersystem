@@ -58,12 +58,15 @@ import wallpaper from 'src/assets/wallpaper.svg'
 
 import useAuthUser from 'src/composables/UseAuthUser.js'
 import useNotify from 'src/composables/UseNotify.js'
+import useSystemLog from 'src/composables/UseSystemLog.js'
 
 const router = useRouter()
 
-const { login } = useAuthUser()
+const { login, profile } = useAuthUser()
 
 const { notifySuccess, notifyError } = useNotify()
+
+const { addLog } = useSystemLog()
 
 const loading = ref(false)
 const showPassword = ref(false)
@@ -80,6 +83,15 @@ const handleLogin = async () => {
     await login({
       email: form.email,
       password: form.password,
+    })
+
+    await addLog({
+      module: 'Autenticação',
+      action: 'LOGIN',
+      description: `${profile.value?.nome || form.email} realizou login no sistema`,
+      metadata: {
+        email: form.email,
+      },
     })
 
     notifySuccess('Login realizado com sucesso')

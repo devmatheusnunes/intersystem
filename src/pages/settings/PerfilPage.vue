@@ -3,6 +3,7 @@
     <div class="text-h5 q-mb-md">
       {{ pageTitle }}
     </div>
+    <div class="text-caption text-grey-7">Atualize seus dados pessoais e senha</div>
 
     <q-card flat bordered>
       <q-card-section>
@@ -27,6 +28,7 @@
               map-options
               outlined
               label="Setor"
+              :disable="isSelfProfile"
             />
           </div>
 
@@ -37,12 +39,12 @@
               emit-value
               map-options
               outlined
-              label="Tipo de Usuário"
+              label="Perfil de Usuário"
               :disable="isSelfProfile"
             />
           </div>
 
-          <div v-if="selectedRolePermissions.length" class="col-12">
+          <div v-if="isEditMode && !isSelfProfile && selectedRolePermissions.length" class="col-12">
             <q-card flat bordered>
               <q-card-section>
                 <div class="text-subtitle1">Permissões do Perfil</div>
@@ -68,7 +70,24 @@
             <q-toggle v-model="form.ativo" label="Usuário ativo" />
           </div>
 
-          <div class="col-12 col-md-6">
+          <div v-if="isSelfProfile" class="col-12 col-md">
+            <q-input
+              v-model="form.senhaAtual"
+              outlined
+              :type="showPasswordCurrent ? 'text' : 'password'"
+              label="Senha Atual"
+            >
+              <template #append>
+                <q-icon
+                  :name="showPasswordCurrent ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="showPasswordCurrent = !showPasswordCurrent"
+                />
+              </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-md">
             <q-input
               v-model="form.senha"
               outlined
@@ -88,7 +107,7 @@
             </q-input>
           </div>
 
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-md">
             <q-input
               v-model="form.confirmarSenha"
               outlined
@@ -125,13 +144,22 @@ import { useRoute, useRouter } from 'vue-router'
 import useApi from 'src/composables/UseApi.js'
 import useNotify from 'src/composables/UseNotify'
 
-import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { secondaryAuth } from 'boot/firebase'
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth'
+import { auth, secondaryAuth } from 'boot/firebase'
+import useAuthUser from 'src/composables/UseAuthUser'
 
 const api = useApi()
 const { notifySuccess, notifyError } = useNotify()
 
+const { profile } = useAuthUser()
+
 const showPassword = ref(false)
+const showPasswordCurrent = ref(false)
 const showPasswordConfirm = ref(false)
 
 const route = useRoute()
@@ -139,7 +167,7 @@ const router = useRouter()
 
 const userId = computed(() => route.params.id)
 const isEditMode = computed(() => !!userId.value)
-const isSelfProfile = computed(() => route.path === '/perfil')
+const isSelfProfile = computed(() => route.name === 'profile')
 
 const roles = ref([])
 const setores = ref([])
@@ -149,15 +177,21 @@ const form = ref({
   nome: '',
   email: '',
   telefone: '',
+
+  senhaAtual: '',
+
   senha: '',
   confirmarSenha: '',
+
   roleId: '',
   setorId: '',
   ativo: true,
 })
 
 const pageTitle = computed(() => {
-  if (isSelfProfile.value) return 'Meu Perfil'
+  if (isSelfProfile.value) {
+    return 'Meu Perfil'
+  }
   return isEditMode.value ? 'Editar Usuário' : 'Novo Usuário'
 })
 
@@ -175,7 +209,21 @@ const loadData = async () => {
     roles.value = await api.list('roles')
     setores.value = await api.list('setores')
 
-    // 🔥 CORREÇÃO AQUI
+    if (isSelfProfile.value) {
+      const currentUser = await api.getById('users', profile.value.id)
+
+      if (currentUser) {
+        form.value = {
+          ...form.value,
+          ...currentUser,
+          senha: '',
+          confirmarSenha: '',
+        }
+      }
+
+      return
+    }
+
     if (isEditMode.value) {
       const user = await api.getById('users', userId.value)
 
@@ -188,10 +236,6 @@ const loadData = async () => {
         }
       }
     }
-
-    // ⚠️ "me" não existe no Firestore automaticamente
-    // Se precisar disso, você teria que buscar pelo userId do auth:
-    // const me = await api.find('users', 'userId', authUserId)
   } catch (error) {
     console.error(error)
     notifyError('Erro ao carregar dados')
@@ -204,10 +248,14 @@ const validate = () => {
   if (!form.value.roleId) return 'Selecione o tipo de usuário'
   if (!form.value.setorId) return 'Selecione o setor'
 
-  if (!form.value.id) {
-    if (!form.value.senha) return 'Informe a senha'
+  if (form.value.senha) {
+    if (isSelfProfile.value && !form.value.senhaAtual) {
+      return 'Informe sua senha atual'
+    }
 
-    if (form.value.senha.length < 6) return 'Senha deve ter no mínimo 6 caracteres'
+    if (form.value.senha.length < 6) {
+      return 'Senha deve ter no mínimo 6 caracteres'
+    }
 
     if (form.value.senha !== form.value.confirmarSenha) {
       return 'Senhas não conferem'
@@ -247,9 +295,29 @@ const saveUser = async () => {
     if (form.value.id) {
       await api.update('users', form.value.id, payload)
 
+      // altera senha somente se informou
+      if (form.value.senha) {
+        if (isSelfProfile.value) {
+          const credential = EmailAuthProvider.credential(
+            auth.currentUser.email,
+            form.value.senhaAtual,
+          )
+
+          await reauthenticateWithCredential(auth.currentUser, credential)
+
+          await updatePassword(auth.currentUser, form.value.senha)
+        } else {
+          // Gestor alterando outro usuário
+          // Aqui apenas salva no Firestore
+          // O Firebase Auth NÃO permite trocar a senha de outro usuário pelo frontend
+          payload.alterarSenha = true
+        }
+      }
+
       notifySuccess('Usuário atualizado com sucesso')
 
-      router.push('/app/settings/users')
+      router.back()
+
       return
     }
 
@@ -291,7 +359,7 @@ const saveUser = async () => {
 }
 
 const goBack = () => {
-  router.push('/app/settings/users')
+  router.back()
 }
 
 onMounted(loadData)

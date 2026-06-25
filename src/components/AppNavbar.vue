@@ -30,11 +30,19 @@
 
             <q-separator />
 
-            <q-item clickable>
-              <q-item-section> Alterar senha </q-item-section>
+            <q-item clickable @click="goToProfile">
+              <q-item-section avatar>
+                <q-icon name="person" />
+              </q-item-section>
+
+              <q-item-section> Meu Perfil </q-item-section>
             </q-item>
 
             <q-item clickable @click="handleLogout">
+              <q-item-section avatar>
+                <q-icon name="logout" />
+              </q-item-section>
+
               <q-item-section> Sair </q-item-section>
             </q-item>
           </q-list>
@@ -53,6 +61,10 @@ import useAuthUser from 'src/composables/UseAuthUser'
 const router = useRouter()
 
 const { user, profile, logout } = useAuthUser()
+
+const goToProfile = () => {
+  router.push('/app/profile')
+}
 
 const userName = computed(() => {
   return profile.value?.nome || user.value?.displayName || user.value?.email || 'Usuário'

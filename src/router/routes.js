@@ -190,6 +190,15 @@ const routes = [
       },
 
       {
+        path: 'profile/:id?',
+        name: 'profile',
+        component: () => import('pages/settings/PerfilPage.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+
+      {
         path: 'settings/departments',
         name: 'settings-departments',
         component: () => import('pages/settings/DepartmentsPage.vue'),
