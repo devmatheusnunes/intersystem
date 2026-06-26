@@ -157,6 +157,8 @@ import useRequests from 'src/composables/UseRequests'
 import { createRequestModel } from 'src/models/requestModel'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
+import useSystemLog from 'src/composables/UseSystemLog'
+
 // ROUTER
 const route = useRoute()
 const router = useRouter()
@@ -169,6 +171,8 @@ const api = useApi()
 // =========================
 const categoryOptions = ref([])
 const categoriesRaw = ref([])
+
+const { addLog } = useSystemLog()
 
 const loadCategories = async () => {
   const data = await api.list('request_categories')
@@ -348,14 +352,44 @@ const save = async () => {
       updatedAt: new Date(),
     })
 
+    // ===========================================
+    // EDITAR
+    // ===========================================
     if (isEditing.value) {
+      // Snapshot antes da alteração
+      const before = await getRequestById(requestId.value)
+
       await updateRequest(requestId.value, payload, profile.value)
+
+      await addLog({
+        module: 'Solicitações',
+        action: 'EDIT',
+        description: `Alterou a solicitação ${payload.requestNumber}`,
+        documentId: requestId.value,
+        before,
+        after: payload,
+      })
+
       notifySuccess('Atualizado com sucesso')
-    } else {
-      await createRequest({
+    }
+
+    // ===========================================
+    // NOVA SOLICITAÇÃO
+    // ===========================================
+    else {
+      const request = await createRequest({
         requestData: payload,
         user: profile.value,
       })
+
+      await addLog({
+        module: 'Solicitações',
+        action: 'CREATE',
+        description: `Criou a solicitação ${payload.requestNumber}`,
+        documentId: request?.id || null,
+        after: payload,
+      })
+
       notifySuccess('Criado com sucesso')
     }
 

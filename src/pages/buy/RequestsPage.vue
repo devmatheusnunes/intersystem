@@ -236,6 +236,7 @@ import useNotify from 'src/composables/UseNotify'
 import useRequests from 'src/composables/UseRequests'
 import usePermissions from 'src/composables/UsePermissions'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
+import useSystemLog from 'src/composables/UseSystemLog'
 
 const router = useRouter()
 
@@ -243,6 +244,8 @@ const { notifyError, notifySuccess } = useNotify()
 const { canViewItem, can } = usePermissions()
 
 const { getRequests, deleteRequest } = useRequests()
+
+const { addLog } = useSystemLog()
 
 const loading = ref(false)
 const rows = ref([])
@@ -322,6 +325,9 @@ const canDelete = (row) => {
   )
 }
 
+// =========================================
+// DELETE (ÚNICO LOG DA PÁGINA)
+// =========================================
 const confirmDelete = (row) => {
   Dialog.create({
     title: 'Excluir Solicitação',
@@ -330,12 +336,25 @@ const confirmDelete = (row) => {
     persistent: true,
   }).onOk(async () => {
     try {
+      // snapshot antes da exclusão (novo padrão)
+      const before = { ...row }
+
       await deleteRequest(row.id)
+
+      await addLog({
+        module: 'Solicitações',
+        action: 'DELETE',
+        description: `Excluiu a solicitação ${row.requestNumber}`,
+        documentId: row.id,
+        before,
+        after: null,
+      })
 
       rows.value = rows.value.filter((item) => item.id !== row.id)
 
       notifySuccess('Solicitação excluída com sucesso')
-    } catch {
+    } catch (error) {
+      console.error(error)
       notifyError('Erro ao excluir solicitação')
     }
   })

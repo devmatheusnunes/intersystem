@@ -57,10 +57,12 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import useAuthUser from 'src/composables/UseAuthUser'
+import useSystemLog from 'src/composables/UseSystemLog'
 
 const router = useRouter()
 
 const { user, profile, logout } = useAuthUser()
+const { addLog } = useSystemLog()
 
 const goToProfile = () => {
   router.push('/app/profile')
@@ -79,6 +81,19 @@ const initial = computed(() => {
 })
 
 const handleLogout = async () => {
+  try {
+    await addLog({
+      module: 'Autenticação',
+      action: 'LOGOUT',
+      description: `${userName.value} encerrou a sessão no sistema`,
+      metadata: {
+        email: user.value?.email,
+      },
+    })
+  } catch (error) {
+    console.error('Erro ao registrar log de logout:', error)
+  }
+
   await logout()
 
   router.push('/')
