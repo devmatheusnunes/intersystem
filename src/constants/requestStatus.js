@@ -13,6 +13,10 @@ export const REQUEST_STATUS = {
 
   WAITING: 'Em Espera',
 
+  REALIZED: 'Pedido Realizado',
+
+  DELIVERED: 'Entregue',
+
   FINISHED: 'Finalizado',
 }
 
@@ -30,6 +34,10 @@ export const REQUEST_STATUS_OPTIONS = [
   REQUEST_STATUS.REJECTED,
 
   REQUEST_STATUS.WAITING,
+
+  REQUEST_STATUS.REALIZED,
+
+  REQUEST_STATUS.DELIVERED,
 
   REQUEST_STATUS.FINISHED,
 ]

@@ -69,15 +69,6 @@ const routes = [
       },
 
       {
-        path: 'buy/history',
-        name: 'buy-history',
-        component: () => import('pages/buy/HistoryPage.vue'),
-        meta: {
-          permission: 'requests.view',
-        },
-      },
-
-      {
         path: 'buy/budget',
         name: 'buy-budget',
         component: () => import('pages/buy/BudgetPage.vue'),
@@ -141,9 +132,27 @@ const routes = [
       },
 
       {
+        path: 'buy/tracking',
+        name: 'buy-tracking',
+        component: () => import('pages/buy/TrackingPage.vue'),
+        meta: {
+          permission: 'requests.view',
+        },
+      },
+
+      {
+        path: 'buy/history',
+        name: 'buy-history',
+        component: () => import('pages/buy/HistoryPage.vue'),
+        meta: {
+          permission: 'requests.view',
+        },
+      },
+
+      {
         path: 'buy/paymentdetail/:id',
         name: 'buy-paymentdetail',
-        component: () => import('pages/buy/PaymentDetails.vue'),
+        component: () => import('pages/buy/PaymentDetailsPage.vue'),
         meta: {
           permission: 'budget.finish',
         },

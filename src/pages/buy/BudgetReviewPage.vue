@@ -140,6 +140,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import useRequests from 'src/composables/UseRequests'
 import useAuthUser from 'src/composables/UseAuthUser'
+import useSystemLog from 'src/composables/UseSystemLog'
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
@@ -154,6 +155,7 @@ const router = useRouter()
 // COMPOSABLES
 const { getRequestById, changeStatus } = useRequests()
 const { user } = useAuthUser()
+const { addLog } = useSystemLog()
 
 // STATE
 const loading = ref(true)
@@ -176,7 +178,6 @@ const form = ref({
 // HELPERS
 // =========================
 
-// TOTAL AUTOMÁTICO
 watch(
   () => [form.value.valorUnitario, request.value?.quantidade],
   () => {
@@ -217,17 +218,16 @@ onMounted(async () => {
 // =========================
 const save = async () => {
   try {
-    // VALIDAÇÃO
     if (!form.value.produtoUrl) throw new Error('Informe a URL')
     if (!form.value.valorUnitario) throw new Error('Informe o valor')
     if (!form.value.formaPagamento) throw new Error('Informe pagamento')
 
     if (!request.value?.id) throw new Error('ID inválido')
 
-    // STATUS
+    const before = structuredClone(request.value)
+
     const newStatus = isBudget.value ? REQUEST_STATUS.REVISION : REQUEST_STATUS.PENDING_ANALYSIS
 
-    // PAYLOAD LIMPO
     const payload = {
       produtoUrl: form.value.produtoUrl,
       valorUnitario: Number(form.value.valorUnitario),
@@ -236,18 +236,32 @@ const save = async () => {
       status: newStatus,
     }
 
-    // OBSERVAÇÃO
     const observacao = isBudget.value
       ? 'Orçamento enviado para revisão'
       : form.value.observacao || 'Revisão realizada'
 
-    // ✅ AQUI ESTÁ O PADRÃO CORRETO
     await changeStatus({
       request: request.value,
       newStatus,
       user: user.value,
       observacao,
       extraData: payload,
+    })
+
+    const after = {
+      ...before,
+      ...payload,
+    }
+
+    await addLog({
+      module: 'Solicitações',
+      action: isBudget.value ? 'BUDGET' : 'REVIEW',
+      description: isBudget.value
+        ? `Realizou o orçamento da solicitação ${request.value.requestNumber}`
+        : `Realizou a revisão da solicitação ${request.value.requestNumber}`,
+      documentId: request.value.id,
+      before,
+      after,
     })
 
     router.push(returnRoute.value)
@@ -276,7 +290,7 @@ const formatDate = (value) => {
 }
 
 // =========================
-// TOTAL FORMATADO (faltava isso)
+// TOTAL FORMATADO
 // =========================
 const formattedTotal = computed(() => {
   return new Intl.NumberFormat('pt-BR', {

@@ -76,6 +76,22 @@ body {
   color: var(--q-waiting);
 }
 
+.bg-realized {
+  background: var(--q-realized);
+}
+
+.text-realized {
+  color: var(--q-realized);
+}
+
+.bg-delivered {
+  background: var(--q-delivered);
+}
+
+.text-delivered {
+  color: var(--q-delivered);
+}
+
 .bg-finished {
   background: var(--q-finished);
 }

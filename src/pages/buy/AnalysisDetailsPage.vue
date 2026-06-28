@@ -227,7 +227,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import useRequests from 'src/composables/UseRequests'
 import useAuthUser from 'src/composables/UseAuthUser'
+import useSystemLog from 'src/composables/UseSystemLog'
 
+const { addLog } = useSystemLog()
 const route = useRoute()
 const router = useRouter()
 
@@ -283,10 +285,27 @@ const validate = () => {
 const handleApprove = async () => {
   if (!validate()) return
 
+  const before = structuredClone(request.value)
+
   await approveRequest({
     request: request.value,
     user: user.value,
     observacao: observacao.value,
+  })
+
+  const after = {
+    ...before,
+    status: 'Deferido',
+    observacaoAnalise: observacao.value,
+  }
+
+  await addLog({
+    module: 'Solicitações',
+    action: 'STATUS_CHANGE',
+    description: `Deferiu a solicitação ${request.value.requestNumber}`,
+    documentId: request.value.id,
+    before,
+    after,
   })
 
   router.push('/app/buy/analysis')
@@ -295,10 +314,27 @@ const handleApprove = async () => {
 const handleReject = async () => {
   if (!validate()) return
 
+  const before = structuredClone(request.value)
+
   await rejectRequest({
     request: request.value,
     user: user.value,
     observacao: observacao.value,
+  })
+
+  const after = {
+    ...before,
+    status: 'Indeferido',
+    observacaoAnalise: observacao.value,
+  }
+
+  await addLog({
+    module: 'Solicitações',
+    action: 'STATUS_CHANGE',
+    description: `Indeferiu a solicitação ${request.value.requestNumber}`,
+    documentId: request.value.id,
+    before,
+    after,
   })
 
   router.push('/app/buy/analysis')
@@ -307,10 +343,27 @@ const handleReject = async () => {
 const handleWait = async () => {
   if (!validate()) return
 
+  const before = structuredClone(request.value)
+
   await waitRequest({
     request: request.value,
     user: user.value,
     observacao: observacao.value,
+  })
+
+  const after = {
+    ...before,
+    status: 'Em Espera',
+    observacaoAnalise: observacao.value,
+  }
+
+  await addLog({
+    module: 'Solicitações',
+    action: 'STATUS_CHANGE',
+    description: `Colocou a solicitação ${request.value.requestNumber} em espera`,
+    documentId: request.value.id,
+    before,
+    after,
   })
 
   router.push('/app/buy/analysis')

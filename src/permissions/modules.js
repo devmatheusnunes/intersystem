@@ -94,6 +94,18 @@ export const SYSTEM_MODULES = [
 
   {
     group: 'COMPRAS',
+    key: 'tracking',
+    title: 'Rastreio',
+    icon: 'visibility',
+    route: '/app/buy/tracking',
+    showInMenu: true,
+    order: 15,
+    menuPermission: 'requests.menu',
+    permissions: [],
+  },
+
+  {
+    group: 'COMPRAS',
     key: 'history',
     title: 'Histórico',
     icon: 'history',

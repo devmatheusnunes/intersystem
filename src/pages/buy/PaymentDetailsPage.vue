@@ -122,17 +122,23 @@ import { useRoute, useRouter } from 'vue-router'
 import useRequests from 'src/composables/UseRequests'
 import useNotify from 'src/composables/UseNotify'
 import useAuthUser from 'src/composables/UseAuthUser'
+import useSystemLog from 'src/composables/UseSystemLog'
+
+import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 const route = useRoute()
 const router = useRouter()
 
 const { notifySuccess, notifyError, notifyWarning } = useNotify()
-const { getRequestById, finishRequest } = useRequests()
+const { getRequestById, realizedRequest } = useRequests()
 const { profile } = useAuthUser()
+const { addLog } = useSystemLog()
 
 const formRef = ref(null)
 
 const requestId = computed(() => route.params.id)
+
+const originalRequest = ref(null)
 
 const form = reactive({
   titulo: '',
@@ -170,6 +176,8 @@ const load = async () => {
       return router.push('/app/buy/payment')
     }
 
+    originalRequest.value = structuredClone(data)
+
     Object.assign(form, {
       ...data,
       valorUnitario: data.valorUnitario || 0,
@@ -191,19 +199,40 @@ const save = async () => {
   }
 
   try {
-    await finishRequest({
-      request: {
-        ...form,
-        pagamento: {
-          comprado: true,
-          valorUnitario: form.valorUnitario,
-          valorTotal: form.valorTotal,
-          formaPagamento: form.formaPagamento,
-          observacao: form.observacaoPagamento,
-          dataCompra: new Date(),
-        },
-      },
+    const paymentData = {
+      comprado: true,
+      valorUnitario: form.valorUnitario,
+      valorTotal: form.valorTotal,
+      formaPagamento: form.formaPagamento,
+      observacao: form.observacaoPagamento,
+      dataCompra: new Date(),
+    }
+
+    const updatedRequest = {
+      ...form,
+      status: REQUEST_STATUS.REALIZED,
+      pagamento: paymentData,
+    }
+
+    await realizedRequest({
+      request: updatedRequest,
       user: profile.value,
+    })
+
+    await addLog({
+      module: 'Compras',
+      action: 'REALIZED',
+      entity: 'request',
+      entityId: requestId.value,
+      description: `Pedido ${form.requestNumber} marcado como realizado`,
+      before: {
+        status: originalRequest.value?.status,
+        pagamento: originalRequest.value?.pagamento || null,
+      },
+      after: {
+        status: REQUEST_STATUS.REALIZED,
+        pagamento: paymentData,
+      },
     })
 
     notifySuccess('Compra finalizada com sucesso')

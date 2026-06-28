@@ -8,5 +8,7 @@ export default () => {
   setCssVar('rejected', '#EF4444', document.body)
   setCssVar('reanalysis', '#aa3e00', document.body)
   setCssVar('waiting', '#6B7280', document.body)
+  setCssVar('realized', '#3e6fd1', document.body)
+  setCssVar('delivered', '#12a755', document.body)
   setCssVar('finished', '#059669', document.body)
 }

@@ -272,15 +272,15 @@ export default function useRequests() {
     })
 
   /* =========================================================
-   * 🏁 FINALIZAR
+   * 🛒 PEDIDO REALIZADO
    * ======================================================= */
 
-  const finishRequest = async ({ request, user }) =>
+  const realizedRequest = async ({ request, user }) =>
     changeStatus({
       request,
-      newStatus: REQUEST_STATUS.FINISHED,
+      newStatus: REQUEST_STATUS.REALIZED,
       user,
-      observacao: request.pagamento?.observacao || 'Pagamento finalizado',
+      observacao: request.pagamento?.observacao || 'Pedido realizado',
       extraData: {
         pagamento: {
           ...request.pagamento,
@@ -290,6 +290,39 @@ export default function useRequests() {
           usuarioNome: getUserName(user),
         },
       },
+    })
+
+  /* =========================================================
+   * 📦 ENTREGA
+   * ======================================================= */
+
+  const deliveredRequest = async ({ request, user, observacao = '' }) =>
+    changeStatus({
+      request,
+      newStatus: REQUEST_STATUS.DELIVERED,
+      user,
+      observacao: observacao || 'Pedido entregue',
+      extraData: {
+        entrega: {
+          entregue: true,
+          dataEntrega: now(),
+          usuarioId: getUserId(user),
+          usuarioNome: getUserName(user),
+          observacao,
+        },
+      },
+    })
+
+  /* =========================================================
+   * 🏁 FINALIZAR
+   * ======================================================= */
+
+  const finishRequest = async ({ request, user, observacao = '' }) =>
+    changeStatus({
+      request,
+      newStatus: REQUEST_STATUS.FINISHED,
+      user,
+      observacao: observacao || 'Processo finalizado',
     })
 
   /* =========================================================
@@ -355,6 +388,8 @@ export default function useRequests() {
 
     requestReanalysis,
     reinforceRequest,
+    realizedRequest,
+    deliveredRequest,
     finishRequest,
     duplicateRequest,
 

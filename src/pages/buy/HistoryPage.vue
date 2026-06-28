@@ -5,19 +5,8 @@
       <div class="col-12 col-sm-6 col-md">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
-            <div class="text-caption text-grey-7">Total Histórico</div>
-            <div class="text-h4 text-weight-bold">
-              {{ stats.total }}
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-sm-6 col-md">
-        <q-card flat bordered class="kpi-card">
-          <q-card-section>
             <div class="text-caption text-grey-7">Deferidos</div>
-            <div class="text-h4 text-positive text-weight-bold">
+            <div class="text-h4 text-approved text-weight-bold">
               {{ stats.approved }}
             </div>
           </q-card-section>
@@ -28,7 +17,7 @@
         <q-card flat bordered class="kpi-card">
           <q-card-section>
             <div class="text-caption text-grey-7">Indeferidos</div>
-            <div class="text-h4 text-negative text-weight-bold">
+            <div class="text-h4 text-rejected text-weight-bold">
               {{ stats.rejected }}
             </div>
           </q-card-section>
@@ -39,7 +28,7 @@
         <q-card flat bordered class="kpi-card">
           <q-card-section>
             <div class="text-caption text-grey-7">Em Espera</div>
-            <div class="text-h4 text-orange text-weight-bold">
+            <div class="text-h4 text-waiting text-weight-bold">
               {{ stats.waiting }}
             </div>
           </q-card-section>
@@ -49,8 +38,30 @@
       <div class="col-12 col-sm-6 col-md">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
+            <div class="text-caption text-grey-7">Comprados</div>
+            <div class="text-h4 text-realized text-weight-bold">
+              {{ stats.realized }}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-12 col-sm-6 col-md">
+        <q-card flat bordered class="kpi-card">
+          <q-card-section>
+            <div class="text-caption text-grey-7">Entregues</div>
+            <div class="text-h4 text-delivered text-weight-bold">
+              {{ stats.delivered }}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-12 col-sm-6 col-md">
+        <q-card flat bordered class="kpi-card">
+          <q-card-section>
             <div class="text-caption text-grey-7">Finalizados</div>
-            <div class="text-h4 text-primary text-weight-bold">
+            <div class="text-h4 text-finished text-weight-bold">
               {{ stats.finished }}
             </div>
           </q-card-section>
@@ -156,6 +167,24 @@
               icon="pause_circle"
             >
               Em Espera
+            </q-chip>
+
+            <q-chip
+              v-else-if="props.row.status === REQUEST_STATUS.REALIZED"
+              color="realized"
+              text-color="white"
+              icon="price_check"
+            >
+              Comprado
+            </q-chip>
+
+            <q-chip
+              v-else-if="props.row.status === REQUEST_STATUS.DELIVERED"
+              color="delivered"
+              text-color="white"
+              icon="local_shipping"
+            >
+              Entregue
             </q-chip>
 
             <q-chip
@@ -335,6 +364,8 @@ const stats = computed(() => ({
   approved: rows.value.filter((i) => i.status === REQUEST_STATUS.APPROVED).length,
   rejected: rows.value.filter((i) => i.status === REQUEST_STATUS.REJECTED).length,
   waiting: rows.value.filter((i) => i.status === REQUEST_STATUS.WAITING).length,
+  realized: rows.value.filter((i) => i.status === REQUEST_STATUS.REALIZED).length,
+  delivered: rows.value.filter((i) => i.status === REQUEST_STATUS.DELIVERED).length,
   finished: rows.value.filter((i) => i.status === REQUEST_STATUS.FINISHED).length,
 }))
 
@@ -369,6 +400,8 @@ const loadRequests = async () => {
           REQUEST_STATUS.APPROVED,
           REQUEST_STATUS.REJECTED,
           REQUEST_STATUS.WAITING,
+          REQUEST_STATUS.REALIZED,
+          REQUEST_STATUS.DELIVERED,
           REQUEST_STATUS.FINISHED,
         ].includes(item.status),
       )
