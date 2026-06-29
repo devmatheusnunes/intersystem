@@ -4,10 +4,16 @@
       <q-btn flat round dense icon="menu" @click="$emit('toggle-menu')" />
 
       <q-toolbar-title>
-        <img alt="Quasar logo" src="~assets/intersystem_horizontal_white.svg" class="logo" />
+        <img alt="Inter System" src="~assets/intersystem_horizontal_white.svg" class="logo" />
       </q-toolbar-title>
 
-      <q-btn flat round icon="account_circle">
+      <q-btn flat class="user-button no-padding">
+        <span class="app-version">
+          {{ appVersion }}
+        </span>
+
+        <q-icon name="account_circle" size="30px" class="q-ml-sm" />
+
         <q-menu>
           <q-list style="min-width: 260px">
             <q-item>
@@ -24,6 +30,10 @@
 
                 <q-item-label caption>
                   {{ roleName }}
+                </q-item-label>
+
+                <q-item-label caption class="text-primary text-weight-medium q-mt-xs">
+                  Versão {{ appVersion }}
                 </q-item-label>
               </q-item-section>
             </q-item>
@@ -63,6 +73,18 @@ const router = useRouter()
 
 const { user, profile, logout } = useAuthUser()
 const { addLog } = useSystemLog()
+
+/*
+|--------------------------------------------------------------------------
+| Versão da aplicação
+|--------------------------------------------------------------------------
+| Futuramente basta substituir por:
+| import { APP } from 'src/config/app'
+| const appVersion = APP.version
+|--------------------------------------------------------------------------
+*/
+
+const appVersion = 'v1.8'
 
 const goToProfile = () => {
   router.push('/app/profile')
@@ -105,5 +127,19 @@ const handleLogout = async () => {
   width: 140px;
   max-height: 80px;
   margin-top: 10px;
+}
+
+.user-button {
+  display: flex;
+  align-items: center;
+}
+
+.app-version {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.5px;
+  margin-right: 6px;
+  user-select: none;
 }
 </style>

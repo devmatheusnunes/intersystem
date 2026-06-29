@@ -127,7 +127,16 @@ const routes = [
         name: 'buy-payment',
         component: () => import('pages/buy/PaymentPage.vue'),
         meta: {
-          permission: 'budget.finish',
+          permission: 'payment.view',
+        },
+      },
+
+      {
+        path: 'buy/paymentdetail/:id',
+        name: 'buy-paymentdetail',
+        component: () => import('pages/buy/PaymentDetailsPage.vue'),
+        meta: {
+          permission: 'payment.finish',
         },
       },
 
@@ -136,7 +145,7 @@ const routes = [
         name: 'buy-tracking',
         component: () => import('pages/buy/TrackingPage.vue'),
         meta: {
-          permission: 'requests.view',
+          permission: 'tracking.view',
         },
       },
 
@@ -150,20 +159,11 @@ const routes = [
       },
 
       {
-        path: 'buy/paymentdetail/:id',
-        name: 'buy-paymentdetail',
-        component: () => import('pages/buy/PaymentDetailsPage.vue'),
-        meta: {
-          permission: 'budget.finish',
-        },
-      },
-
-      {
         path: 'buy/preferences',
         name: 'buy-preferences',
         component: () => import('pages/buy/SettingsRequestPage.vue'),
         meta: {
-          permission: 'budget.finish',
+          permission: 'preferences.view',
         },
       },
 

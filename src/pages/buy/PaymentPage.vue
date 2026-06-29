@@ -117,7 +117,7 @@
             <!-- AÇÕES -->
             <q-td key="actions" :props="props">
               <q-btn
-                v-if="!props.row.pagamento?.comprado"
+                v-if="!props.row.pagamento?.comprado && hasPermission('payment.finish')"
                 color="primary"
                 icon="shopping_cart"
                 label="Finalizar Compra"
@@ -148,6 +148,14 @@ import { useRouter } from 'vue-router'
 import useRequests from 'src/composables/UseRequests'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
+import useAuthUser from 'src/composables/UseAuthUser'
+
+const { hasPermission } = useAuthUser()
+
+if (!hasPermission('payment.view')) {
+  router.replace('/app')
+}
+
 const router = useRouter()
 
 const { getRequests } = useRequests()
@@ -175,6 +183,8 @@ const filteredRows = computed(() => {
 })
 
 const goToPayment = (row) => {
+  if (!hasPermission('payment.finish')) return
+
   router.push(`/app/buy/paymentdetail/${row.id}`)
 }
 

@@ -214,7 +214,7 @@
 
             <!-- Reanálise -->
             <q-btn
-              v-if="canRequestReanalysis(props.row)"
+              v-if="canRequestReanalysis(props.row) && hasPermission('history.reanalyze')"
               flat
               round
               color="warning"
@@ -226,7 +226,7 @@
 
             <!-- Reforço -->
             <q-btn
-              v-if="canReinforce(props.row)"
+              v-if="canReinforce(props.row) && hasPermission('history.reinforcement')"
               flat
               round
               color="orange"
@@ -238,7 +238,7 @@
 
             <!-- Pedir novamente -->
             <q-btn
-              v-if="props.row.status === REQUEST_STATUS.FINISHED"
+              v-if="props.row.status === REQUEST_STATUS.FINISHED && hasPermission('history.copy')"
               flat
               round
               color="positive"
@@ -284,7 +284,7 @@ const search = ref('')
 
 const { notifyError, notifySuccess } = useNotify()
 const { canViewItem } = usePermissions()
-const { profile } = useAuthUser()
+const { profile, hasPermission } = useAuthUser()
 
 const { addLog } = useSystemLog()
 
@@ -455,6 +455,7 @@ const handleReanalysis = async (request) => {
     })
 
     notifySuccess('Solicitação enviada para reanálise')
+    if (!hasPermission('history.reanalyze')) return
     loadRequests()
   } catch (err) {
     console.error('ERRO REANALISE', err)
@@ -502,7 +503,7 @@ const handleReinforce = async (request) => {
     })
 
     notifySuccess('Solicitação enviada com prioridade')
-
+    if (!hasPermission('history.reinforcement')) return
     loadRequests()
   } catch {
     notifyError('Erro ao solicitar reforço')
@@ -551,7 +552,7 @@ const handleDuplicate = async (request) => {
     })
 
     notifySuccess('Nova solicitação criada')
-
+    if (!hasPermission('history.copy')) return
     router.push('/app/buy/new-request')
   } catch (error) {
     console.error('ERRO DUPLICAR', error)

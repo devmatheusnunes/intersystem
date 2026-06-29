@@ -33,7 +33,12 @@
               </div>
 
               <div class="col-auto">
-                <q-btn color="primary" label="Adicionar" @click="addCategory" />
+                <q-btn
+                  v-if="hasPermission('preferences.create')"
+                  color="primary"
+                  label="Adicionar"
+                  @click="addCategory"
+                />
               </div>
             </div>
 
@@ -41,7 +46,13 @@
             <q-list bordered separator>
               <q-item v-for="cat in categories" :key="cat.id">
                 <q-item-section>
-                  <q-input dense filled v-model="cat.nome" @blur="updateCategory(cat)" />
+                  <q-input
+                    dense
+                    filled
+                    v-model="cat.nome"
+                    :readonly="!hasPermission('preferences.edit')"
+                    @blur="hasPermission('preferences.edit') && updateCategory(cat)"
+                  />
                 </q-item-section>
 
                 <q-item-section side>
@@ -49,7 +60,14 @@
                 </q-item-section>
 
                 <q-item-section side>
-                  <q-btn flat round color="negative" icon="delete" @click="removeCategory(cat)" />
+                  <q-btn
+                    v-if="hasPermission('preferences.delete')"
+                    flat
+                    round
+                    color="negative"
+                    icon="delete"
+                    @click="removeCategory(cat)"
+                  />
                 </q-item-section>
               </q-item>
             </q-list>
@@ -135,7 +153,12 @@
 
         <!-- SALVAR -->
         <div class="row justify-end q-mt-md">
-          <q-btn color="primary" label="Salvar Configurações" @click="saveSettings" />
+          <q-btn
+            v-if="hasPermission('preferences.edit')"
+            color="primary"
+            label="Salvar Configurações"
+            @click="saveSettings"
+          />
         </div>
       </q-tab-panel>
     </q-tab-panels>
@@ -148,11 +171,14 @@ import { ref, onMounted } from 'vue'
 import useApi from 'src/composables/UseApi'
 import useNotify from 'src/composables/UseNotify'
 import useSystemLog from 'src/composables/UseSystemLog'
+import useAuthUser from 'src/composables/UseAuthUser'
 
 const api = useApi()
 
 const { notifySuccess, notifyError } = useNotify()
 const { addLog } = useSystemLog()
+
+const { hasPermission } = useAuthUser()
 
 /* TABS */
 const tab = ref('categoria')
@@ -174,6 +200,7 @@ const loadCategories = async () => {
 
 const addCategory = async () => {
   if (!newCategory.value.nome) return
+  if (!hasPermission('preferences.create')) return
 
   const category = {
     ...newCategory.value,
@@ -199,6 +226,7 @@ const addCategory = async () => {
 
 const updateCategory = async (cat) => {
   await api.update('request_categories', cat.id, cat)
+  if (!hasPermission('preferences.edit')) return
 
   await addLog({
     module: 'Configurações de Solicitação',
@@ -213,6 +241,7 @@ const updateCategory = async (cat) => {
 
 const removeCategory = async (cat) => {
   await api.remove('request_categories', cat.id)
+  if (!hasPermission('preferences.delete')) return
 
   await addLog({
     module: 'Configurações de Solicitação',
@@ -279,6 +308,7 @@ const saveSettings = async () => {
       },
     })
 
+    if (!hasPermission('preferences.edit')) return
     notifySuccess('Configurações salvas com sucesso')
   } catch (error) {
     console.error(error)

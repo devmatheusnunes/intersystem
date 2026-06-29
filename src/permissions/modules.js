@@ -88,8 +88,11 @@ export const SYSTEM_MODULES = [
     route: '/app/buy/payment',
     showInMenu: true,
     order: 14,
-    menuPermission: 'budget.finish',
-    permissions: [],
+    permissions: [
+      { label: 'Exibir Menu', value: 'payment.menu' },
+      { label: 'Visualizar', value: 'payment.view' },
+      { label: 'Finalizar Compra', value: 'payment.finish' },
+    ],
   },
 
   {
@@ -100,8 +103,12 @@ export const SYSTEM_MODULES = [
     route: '/app/buy/tracking',
     showInMenu: true,
     order: 15,
-    menuPermission: 'requests.menu',
-    permissions: [],
+    permissions: [
+      { label: 'Exibir Menu', value: 'tracking.menu' },
+      { label: 'Visualizar', value: 'tracking.view' },
+      { label: 'Confirmar Entrega', value: 'tracking.deliver' },
+      { label: 'Finalizar Processo', value: 'tracking.finish' },
+    ],
   },
 
   {
@@ -111,21 +118,31 @@ export const SYSTEM_MODULES = [
     icon: 'history',
     route: '/app/buy/history',
     showInMenu: true,
-    order: 15,
-    menuPermission: 'requests.menu',
-    permissions: [],
+    order: 16,
+    permissions: [
+      { label: 'Exibir Menu', value: 'history.menu' },
+      { label: 'Visualizar', value: 'history.view' },
+      { label: 'Solicitar Reanálise', value: 'history.reanalyze' },
+      { label: 'Solicitar Reforço', value: 'history.reinforcement' },
+      { label: 'Copiar Solicitação', value: 'history.copy' },
+    ],
   },
 
   {
     group: 'COMPRAS',
     key: 'preferences',
-    title: 'Preferencias',
+    title: 'Preferências',
     icon: 'settings',
     route: '/app/buy/preferences',
     showInMenu: true,
-    order: 15,
-    menuPermission: 'requests.menu',
-    permissions: [],
+    order: 17,
+    permissions: [
+      { label: 'Exibir Menu', value: 'preferences.menu' },
+      { label: 'Visualizar', value: 'preferences.view' },
+      { label: 'Criar Categoria', value: 'preferences.create' },
+      { label: 'Editar', value: 'preferences.edit' },
+      { label: 'Excluir Categoria', value: 'preferences.delete' },
+    ],
   },
 
   {

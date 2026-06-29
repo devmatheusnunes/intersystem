@@ -105,7 +105,9 @@
         <template #body-cell-status="props">
           <q-td :props="props">
             <q-chip
-              v-if="props.row.status === REQUEST_STATUS.REALIZED"
+              v-if="
+                props.row.status === REQUEST_STATUS.REALIZED && hasPermission('tracking.deliver')
+              "
               color="primary"
               text-color="white"
               icon="shopping_cart"
@@ -114,7 +116,9 @@
             </q-chip>
 
             <q-chip
-              v-else-if="props.row.status === REQUEST_STATUS.DELIVERED"
+              v-if="
+                props.row.status === REQUEST_STATUS.DELIVERED && hasPermission('tracking.finish')
+              "
               color="positive"
               text-color="white"
               icon="local_shipping"
@@ -185,16 +189,15 @@ import { Dialog } from 'quasar'
 
 import useNotify from 'src/composables/UseNotify'
 import useRequests from 'src/composables/UseRequests'
-import useAuthUser from 'src/composables/UseAuthUser'
 import useSystemLog from 'src/composables/UseSystemLog'
-
+import useAuthUser from 'src/composables/UseAuthUser'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 const router = useRouter()
 
 const { notifySuccess, notifyError } = useNotify()
 
-const { profile } = useAuthUser()
+const { profile, hasPermission } = useAuthUser()
 
 const { getRequestsByStatuses, deliveredRequest, finishRequest } = useRequests()
 
@@ -342,6 +345,8 @@ const confirmDelivery = (row) => {
 
       notifySuccess('Pedido marcado como entregue')
 
+      if (!hasPermission('tracking.deliver')) return
+
       loadRequests()
     } catch (err) {
       console.error(err)
@@ -402,6 +407,8 @@ const confirmFinish = (row) => {
       })
 
       notifySuccess('Processo finalizado')
+
+      if (!hasPermission('tracking.finish')) return
 
       loadRequests()
     } catch (err) {
