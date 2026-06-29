@@ -108,47 +108,13 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
+/* ===========================
+   BACKGROUND
+=========================== */
+
 .login-page {
   min-height: 100vh;
-}
-
-.login-banner {
-  background: linear-gradient(135deg, #02166a, #00a3fe);
-}
-
-.login-card {
   width: 100%;
-  max-width: 420px;
-  padding: 20px;
-  border-radius: 20px;
-  background: white;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
-@media (max-width: 768px) {
-  .login-banner {
-    display: none;
-  }
-}
-
-.logo-login {
-  width: 250px;
-  height: 250px;
-  margin-bottom: -5vh;
-}
-
-.btn-login {
-  background-color: #02166a;
-  color: #ffff;
-}
-
-.wallpaper-login {
-  width: 70vw;
-  height: 70vh;
-}
-
-.login-page {
-  min-height: 100vh;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -157,49 +123,136 @@ const handleLogin = async () => {
 .overlay {
   min-height: 100vh;
 
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.65) 0%,
-    rgba(0, 0, 0, 0.45) 30%,
-    rgba(0, 0, 0, 0.15) 100%
-  );
-}
-
-.login-container {
-  min-height: 100vh;
-
   display: flex;
   align-items: center;
 
-  padding-left: 8%;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.45) 35%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
 }
 
-.login-card {
+/* ===========================
+   CONTAINER
+=========================== */
+
+.login-container {
   width: 100%;
-  max-width: 430px;
+  padding-left: clamp(30px, 8vw, 140px);
+  padding-right: 24px;
+  display: flex;
+  align-items: center;
+}
+
+/* ===========================
+   CARD
+=========================== */
+
+.login-card {
+  width: min(92vw, 430px);
+
+  padding: clamp(20px, 2vw, 32px);
 
   border-radius: 24px;
 
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
 
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
 
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
 }
+
+/* ===========================
+   LOGO
+=========================== */
 
 .logo-login {
-  width: 220px;
-  margin-bottom: -20px;
+  width: clamp(140px, 20vw, 240px);
+
+  aspect-ratio: 1;
+
+  margin: 0 auto -18px;
 }
 
+/* ===========================
+   BUTTON
+=========================== */
+
+.btn-login {
+  background: #02166a;
+  color: white;
+  height: 46px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+/* ===========================
+   TEXT
+=========================== */
+
+.text-h5 {
+  font-size: clamp(1.4rem, 2vw, 2rem);
+}
+
+/* ===========================
+   MOBILE
+=========================== */
+
 @media (max-width: 768px) {
-  .login-container {
+  .overlay {
     justify-content: center;
     padding: 20px;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .login-container {
+    justify-content: center;
+    padding: 0;
   }
 
   .login-card {
-    max-width: 100%;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 20px;
+  }
+
+  .logo-login {
+    width: clamp(140px, 45vw, 210px);
+  }
+}
+
+/* ===========================
+   NOTEBOOKS PEQUENOS
+=========================== */
+
+@media (max-height: 800px) {
+  .login-card {
+    padding: 18px;
+  }
+
+  .logo-login {
+    width: 150px;
+    margin-bottom: -12px;
+  }
+
+  .text-h5 {
+    font-size: 1.35rem;
+  }
+}
+
+/* ===========================
+   ULTRAWIDE / 2K / 4K
+=========================== */
+
+@media (min-width: 1800px) {
+  .login-container {
+    padding-left: 10%;
+  }
+
+  .login-card {
+    max-width: 470px;
   }
 }
 </style>

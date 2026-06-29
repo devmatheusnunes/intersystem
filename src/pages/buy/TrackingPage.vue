@@ -311,21 +311,32 @@ const confirmDelivery = (row) => {
 
       await addLog({
         module: 'Entrega',
-
         action: 'DELIVER',
-
+        entity: 'request',
+        entityId: row.id,
+        documentId: row.id,
         description: `Pedido ${row.requestNumber} marcado como entregue`,
 
-        documentId: row.id,
+        before: {
+          requestNumber: row.requestNumber,
+          titulo: row.titulo,
+          categoria: row.categoria,
+          setorNome: row.setorNome,
+          quantidade: row.quantidade,
+          valorUnitario: row.valorUnitario,
+          valorTotal: row.valorTotal,
+          status: REQUEST_STATUS.REALIZED,
+        },
 
-        metadata: {
-          before: {
-            status: REQUEST_STATUS.REALIZED,
-          },
-
-          after: {
-            status: REQUEST_STATUS.DELIVERED,
-          },
+        after: {
+          requestNumber: row.requestNumber,
+          titulo: row.titulo,
+          categoria: row.categoria,
+          setorNome: row.setorNome,
+          quantidade: row.quantidade,
+          valorUnitario: row.valorUnitario,
+          valorTotal: row.valorTotal,
+          status: REQUEST_STATUS.DELIVERED,
         },
       })
 
@@ -361,21 +372,32 @@ const confirmFinish = (row) => {
 
       await addLog({
         module: 'Entrega',
-
         action: 'FINISH',
-
+        entity: 'request',
+        entityId: row.id,
+        documentId: row.id,
         description: `Pedido ${row.requestNumber} finalizado`,
 
-        documentId: row.id,
+        before: {
+          requestNumber: row.requestNumber,
+          titulo: row.titulo,
+          categoria: row.categoria,
+          setorNome: row.setorNome,
+          quantidade: row.quantidade,
+          valorUnitario: row.valorUnitario,
+          valorTotal: row.valorTotal,
+          status: REQUEST_STATUS.DELIVERED,
+        },
 
-        metadata: {
-          before: {
-            status: REQUEST_STATUS.DELIVERED,
-          },
-
-          after: {
-            status: REQUEST_STATUS.FINISHED,
-          },
+        after: {
+          requestNumber: row.requestNumber,
+          titulo: row.titulo,
+          categoria: row.categoria,
+          setorNome: row.setorNome,
+          quantidade: row.quantidade,
+          valorUnitario: row.valorUnitario,
+          valorTotal: row.valorTotal,
+          status: REQUEST_STATUS.FINISHED,
         },
       })
 

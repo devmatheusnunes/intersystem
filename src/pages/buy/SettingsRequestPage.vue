@@ -144,11 +144,15 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+
 import useApi from 'src/composables/UseApi'
 import useNotify from 'src/composables/UseNotify'
+import useSystemLog from 'src/composables/UseSystemLog'
 
 const api = useApi()
+
 const { notifySuccess, notifyError } = useNotify()
+const { addLog } = useSystemLog()
 
 /* TABS */
 const tab = ref('categoria')
@@ -157,8 +161,12 @@ const subTab = ref('indeferido')
 /* =========================
  * 📂 CATEGORIAS
  * =======================*/
+
 const categories = ref([])
-const newCategory = ref({ nome: '', ativo: true })
+const newCategory = ref({
+  nome: '',
+  ativo: true,
+})
 
 const loadCategories = async () => {
   categories.value = await api.list('request_categories')
@@ -167,23 +175,62 @@ const loadCategories = async () => {
 const addCategory = async () => {
   if (!newCategory.value.nome) return
 
-  await api.post('request_categories', newCategory.value)
-  newCategory.value = { nome: '', ativo: true }
+  const category = {
+    ...newCategory.value,
+  }
+
+  const result = await api.post('request_categories', category)
+
+  await addLog({
+    module: 'Configurações de Solicitação',
+    action: 'CREATE',
+    description: `Criou a categoria "${category.nome}"`,
+    documentId: result?.id || null,
+    metadata: category,
+  })
+
+  newCategory.value = {
+    nome: '',
+    ativo: true,
+  }
+
   loadCategories()
 }
 
 const updateCategory = async (cat) => {
   await api.update('request_categories', cat.id, cat)
+
+  await addLog({
+    module: 'Configurações de Solicitação',
+    action: 'EDIT',
+    description: `Alterou a categoria "${cat.nome}"`,
+    documentId: cat.id,
+    metadata: {
+      ...cat,
+    },
+  })
 }
 
 const removeCategory = async (cat) => {
   await api.remove('request_categories', cat.id)
+
+  await addLog({
+    module: 'Configurações de Solicitação',
+    action: 'DELETE',
+    description: `Excluiu a categoria "${cat.nome}"`,
+    documentId: cat.id,
+    metadata: {
+      ...cat,
+    },
+  })
+
   loadCategories()
 }
 
 /* =========================
  * ⚙️ SETTINGS
  * =======================*/
+
 const settings = ref({
   indeferido: {
     tempo: 0,
@@ -217,12 +264,20 @@ const saveSettings = async () => {
     const existing = await api.getById('request_settings', 'global')
 
     if (existing) {
-      // ✅ Atualiza
       await api.update('request_settings', 'global', settings.value)
     } else {
-      // ✅ Cria com ID FIXO (IMPORTANTE)
       await api.set('request_settings', 'global', settings.value)
     }
+
+    await addLog({
+      module: 'Configurações de Solicitação',
+      action: 'EDIT',
+      description: 'Alterou as configurações globais das solicitações',
+      documentId: 'global',
+      metadata: {
+        ...settings.value,
+      },
+    })
 
     notifySuccess('Configurações salvas com sucesso')
   } catch (error) {
@@ -232,6 +287,7 @@ const saveSettings = async () => {
 }
 
 /* INIT */
+
 onMounted(() => {
   loadCategories()
   loadSettings()

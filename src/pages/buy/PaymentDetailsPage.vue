@@ -225,11 +225,19 @@ const save = async () => {
       entity: 'request',
       entityId: requestId.value,
       description: `Pedido ${form.requestNumber} marcado como realizado`,
+
       before: {
+        requestNumber: originalRequest.value?.requestNumber,
+        titulo: originalRequest.value?.titulo,
+        categoria: originalRequest.value?.categoria,
         status: originalRequest.value?.status,
         pagamento: originalRequest.value?.pagamento || null,
       },
+
       after: {
+        requestNumber: form.requestNumber,
+        titulo: form.titulo,
+        categoria: form.categoria,
         status: REQUEST_STATUS.REALIZED,
         pagamento: paymentData,
       },

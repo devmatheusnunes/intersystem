@@ -268,7 +268,8 @@ import { useRouter } from 'vue-router'
 import useNotify from 'src/composables/UseNotify'
 import useRequests from 'src/composables/UseRequests'
 import usePermissions from 'src/composables/UsePermissions'
-import useAuthUser from 'src/composables/UseAuthUser' // ✅ ADICIONADO
+import useAuthUser from 'src/composables/UseAuthUser'
+import useSystemLog from 'src/composables/UseSystemLog'
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 import useApi from 'src/composables/UseApi'
@@ -283,7 +284,9 @@ const search = ref('')
 
 const { notifyError, notifySuccess } = useNotify()
 const { canViewItem } = usePermissions()
-const { profile } = useAuthUser() // ✅ AQUI
+const { profile } = useAuthUser()
+
+const { addLog } = useSystemLog()
 
 const settings = ref({
   indeferido: { tempo: 0, limite: 0 },
@@ -322,15 +325,12 @@ const canRequestReanalysis = (row) => {
 
   const tentativas = row.reanalises || 0
 
-  // 🚫 limite atingido
   if (limite > 0 && tentativas >= limite) return false
 
-  // 📅 pegar data da análise
   const analyzedAt = row?.analise?.analyzedAt
 
   const horas = hoursBetween(analyzedAt)
 
-  // ⏳ ainda não passou tempo mínimo
   if (tempoMin > 0 && horas < tempoMin) return false
 
   return true
@@ -344,14 +344,12 @@ const canReinforce = (row) => {
 
   const tentativas = row.reforcos || 0
 
-  // 🚫 limite atingido
   if (limite > 0 && tentativas >= limite) return false
 
   const createdAt = row.createdAt
 
   const horas = hoursBetween(createdAt)
 
-  // ⏳ ainda não passou tempo mínimo
   if (tempoMin > 0 && horas < tempoMin) return false
 
   return true
@@ -418,10 +416,42 @@ const viewRequest = (row) => {
 
 const handleReanalysis = async (request) => {
   try {
+    const before = structuredClone(request)
+
     await requestReanalysis({
       request,
       user: profile.value,
-      motivo: 'Solicitado pelo usuário', // 👈 ADICIONE ISSO
+      motivo: 'Solicitado pelo usuário',
+    })
+
+    await addLog({
+      module: 'Solicitações',
+      action: 'REQUEST_REANALYSIS',
+
+      entity: 'request',
+      entityId: request.id,
+
+      requestNumber: request.requestNumber,
+
+      description: `Solicitou reanálise da solicitação ${request.requestNumber}`,
+
+      before,
+
+      after: {
+        status: REQUEST_STATUS.REANALYSIS,
+        reanalises: (request.reanalises || 0) + 1,
+      },
+
+      metadata: {
+        requestNumber: request.requestNumber,
+        requestId: request.id,
+
+        titulo: request.titulo,
+        setor: request.setorNome,
+
+        solicitante: request.solicitanteNome,
+        solicitanteEmail: request.solicitanteEmail,
+      },
     })
 
     notifySuccess('Solicitação enviada para reanálise')
@@ -434,9 +464,41 @@ const handleReanalysis = async (request) => {
 
 const handleReinforce = async (request) => {
   try {
+    const before = structuredClone(request)
+
     await reinforceRequest({
       request,
-      user: profile.value, // ✅ CORREÇÃO (ERA O BUG)
+      user: profile.value,
+    })
+
+    await addLog({
+      module: 'Solicitações',
+      action: 'REINFORCE',
+
+      entity: 'request',
+      entityId: request.id,
+
+      requestNumber: request.requestNumber,
+
+      description: `Solicitou reforço para a solicitação ${request.requestNumber}`,
+
+      before,
+
+      after: {
+        status: REQUEST_STATUS.WAITING,
+        reforcos: (request.reforcos || 0) + 1,
+      },
+
+      metadata: {
+        requestNumber: request.requestNumber,
+        requestId: request.id,
+
+        titulo: request.titulo,
+        setor: request.setorNome,
+
+        solicitante: request.solicitanteNome,
+        solicitanteEmail: request.solicitanteEmail,
+      },
     })
 
     notifySuccess('Solicitação enviada com prioridade')
@@ -449,9 +511,43 @@ const handleReinforce = async (request) => {
 
 const handleDuplicate = async (request) => {
   try {
-    await duplicateRequest({
+    const newRequest = await duplicateRequest({
       request,
-      user: profile.value, // ✅ CORREÇÃO
+      user: profile.value,
+    })
+
+    await addLog({
+      module: 'Solicitações',
+      action: 'DUPLICATE',
+
+      entity: 'request',
+      entityId: request.id,
+
+      requestNumber: request.requestNumber,
+
+      description: `Duplicou a solicitação ${request.requestNumber}`,
+
+      before: request,
+
+      after: {
+        originalRequestId: request.id,
+        duplicatedRequestId: newRequest?.id || null,
+        requestNumber: newRequest?.requestNumber || null,
+      },
+
+      metadata: {
+        requestNumber: request.requestNumber,
+        duplicatedRequestNumber: newRequest?.requestNumber || null,
+
+        requestId: request.id,
+        duplicatedRequestId: newRequest?.id || null,
+
+        titulo: request.titulo,
+        setor: request.setorNome,
+
+        solicitante: request.solicitanteNome,
+        solicitanteEmail: request.solicitanteEmail,
+      },
     })
 
     notifySuccess('Nova solicitação criada')
