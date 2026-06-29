@@ -147,10 +147,9 @@ import { useRouter } from 'vue-router'
 
 import useRequests from 'src/composables/UseRequests'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
+import usePermissions from 'src/composables/UsePermissions'
 
-import useAuthUser from 'src/composables/UseAuthUser'
-
-const { hasPermission } = useAuthUser()
+const { hasPermission } = usePermissions()
 
 if (!hasPermission('payment.view')) {
   router.replace('/app')
