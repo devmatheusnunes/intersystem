@@ -283,8 +283,8 @@ const rows = ref([])
 const search = ref('')
 
 const { notifyError, notifySuccess } = useNotify()
-const { canViewItem } = usePermissions()
-const { profile, hasPermission } = useAuthUser()
+const { canViewItem, hasPermission } = usePermissions()
+const { profile } = useAuthUser()
 
 const { addLog } = useSystemLog()
 

@@ -192,12 +192,15 @@ import useRequests from 'src/composables/UseRequests'
 import useSystemLog from 'src/composables/UseSystemLog'
 import useAuthUser from 'src/composables/UseAuthUser'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
+import usePermissions from 'src/composables/UsePermissions'
 
 const router = useRouter()
 
 const { notifySuccess, notifyError } = useNotify()
 
-const { profile, hasPermission } = useAuthUser()
+const { profile } = useAuthUser()
+
+const { hasPermission } = usePermissions()
 
 const { getRequestsByStatuses, deliveredRequest, finishRequest } = useRequests()
 

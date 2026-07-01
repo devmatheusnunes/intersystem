@@ -171,14 +171,14 @@ import { ref, onMounted } from 'vue'
 import useApi from 'src/composables/UseApi'
 import useNotify from 'src/composables/UseNotify'
 import useSystemLog from 'src/composables/UseSystemLog'
-import useAuthUser from 'src/composables/UseAuthUser'
+import usePermissions from 'src/composables/UsePermissions'
 
 const api = useApi()
 
 const { notifySuccess, notifyError } = useNotify()
 const { addLog } = useSystemLog()
 
-const { hasPermission } = useAuthUser()
+const { hasPermission } = usePermissions()
 
 /* TABS */
 const tab = ref('categoria')

@@ -84,7 +84,7 @@ const { addLog } = useSystemLog()
 |--------------------------------------------------------------------------
 */
 
-const appVersion = 'v1.9'
+const appVersion = 'v2.0'
 
 const goToProfile = () => {
   router.push('/app/profile')
