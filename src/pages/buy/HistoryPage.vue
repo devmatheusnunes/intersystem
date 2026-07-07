@@ -111,11 +111,11 @@
         <template #body-cell-titulo="props">
           <q-td :props="props">
             <div class="text-weight-medium">
-              {{ props.row.titulo }}
+              {{ props.row.produto?.titulo }}
             </div>
 
             <div class="text-caption text-grey-7">
-              {{ props.row.solicitanteNome }}
+              {{ props.row.solicitante?.nome }}
             </div>
           </q-td>
         </template>
@@ -124,7 +124,7 @@
         <template #body-cell-valorTotal="props">
           <q-td :props="props">
             {{
-              Number(props.row.valorTotal || 0).toLocaleString('pt-BR', {
+              Number(props.row.financeiro?.valorTotal || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
               })
@@ -135,7 +135,7 @@
         <!-- Setor -->
         <template #body-cell-setorNome="props">
           <q-td :props="props">
-            {{ props.row.setorNome }}
+            {{ props.row.solicitante?.setorNome }}
           </q-td>
         </template>
 
@@ -219,7 +219,7 @@
               round
               color="warning"
               icon="restart_alt"
-              @click="handleReanalysis(props.row)"
+              @click="openReanalysisDialog(props.row)"
             >
               <q-tooltip>Solicitar Reanálise</q-tooltip>
             </q-btn>
@@ -231,7 +231,7 @@
               round
               color="orange"
               icon="priority_high"
-              @click="handleReinforce(props.row)"
+              @click="openReinforceDialog(props.row)"
             >
               <q-tooltip>Solicitar Reforço</q-tooltip>
             </q-btn>
@@ -258,11 +258,109 @@
         </template>
       </q-table>
     </q-card>
+
+    <!-- ===========================================================
+     DIALOG REANÁLISE / REFORÇO
+    =========================================================== -->
+
+    <q-dialog
+      v-model="analysisDialog.open"
+      persistent
+      transition-show="scale"
+      transition-hide="scale"
+    >
+      <q-card class="analysis-dialog">
+        <q-card-section class="row items-center dialog-header">
+          <q-icon
+            :name="analysisDialog.type === 'reanalysis' ? 'restart_alt' : 'priority_high'"
+            size="34px"
+            :color="analysisDialog.type === 'reanalysis' ? 'warning' : 'orange'"
+          />
+
+          <div class="q-ml-md">
+            <div class="text-h6 text-weight-bold">
+              {{
+                analysisDialog.type === 'reanalysis'
+                  ? 'Solicitar Reanálise'
+                  : 'Solicitar Reforço de Análise'
+              }}
+            </div>
+
+            <div class="text-caption text-grey-7">
+              {{ analysisDialog.request?.requestNumber }}
+            </div>
+          </div>
+
+          <q-space />
+
+          <q-btn flat dense round icon="close" v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-gutter-lg">
+          <!-- Dados do pedido -->
+
+          <q-card flat bordered class="bg-grey-1">
+            <q-card-section>
+              <div class="text-subtitle2 text-weight-medium">
+                {{ analysisDialog.request.produto?.titulo }}
+              </div>
+
+              <div class="text-caption text-grey-7">
+                Analisado por: {{ analysisDialog.request.analise?.usuarioNome }}
+              </div>
+            </q-card-section>
+          </q-card>
+
+          <!-- Justificativa da análise -->
+
+          <div v-if="analysisDialog.request?.analise?.justificativa">
+            <div class="text-subtitle2 text-weight-bold q-mb-sm">Justificativa da análise</div>
+
+            <q-card flat bordered class="analysis-note">
+              <q-card-section>
+                {{ analysisDialog.request.analise.justificativa }}
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <!-- Justificativa -->
+
+          <q-input
+            v-model="analysisDialog.justification"
+            outlined
+            autogrow
+            maxlength="1000"
+            counter
+            type="textarea"
+            label="Justificativa"
+            hint="Explique o motivo da solicitação."
+            :rules="[(v) => !!v || 'Informe uma justificativa']"
+          />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat color="grey-8" label="Cancelar" v-close-popup />
+
+          <q-btn
+            unelevated
+            color="primary"
+            :label="
+              analysisDialog.type === 'reanalysis' ? 'Solicitar Reanálise' : 'Solicitar Reforço'
+            "
+            @click="confirmAnalysisRequest"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import useNotify from 'src/composables/UseNotify'
@@ -275,7 +373,6 @@ import { REQUEST_STATUS } from 'src/constants/requestStatus'
 import useApi from 'src/composables/UseApi'
 
 const api = useApi()
-
 const router = useRouter()
 
 const loading = ref(false)
@@ -285,96 +382,145 @@ const search = ref('')
 const { notifyError, notifySuccess } = useNotify()
 const { canViewItem, hasPermission } = usePermissions()
 const { profile } = useAuthUser()
-
 const { addLog } = useSystemLog()
-
-const settings = ref({
-  indeferido: { tempo: 0, limite: 0 },
-  espera: { tempo: 0, limite: 0 },
-})
-
-const loadSettings = async () => {
-  try {
-    const data = await api.getById('request_settings', 'global')
-
-    if (data) {
-      settings.value = {
-        indeferido: data.indeferido || { tempo: 0, limite: 0 },
-        espera: data.espera || { tempo: 0, limite: 0 },
-      }
-    }
-  } catch (err) {
-    console.error('Erro ao carregar settings', err)
-  }
-}
-
-const hoursBetween = (date) => {
-  if (!date) return Infinity
-
-  const d = date?.toDate ? date.toDate() : new Date(date)
-  const now = new Date()
-
-  return (now - d) / (1000 * 60 * 60)
-}
-
-const canRequestReanalysis = (row) => {
-  if (row.status !== REQUEST_STATUS.REJECTED) return false
-
-  const limite = settings.value.indeferido.limite
-  const tempoMin = settings.value.indeferido.tempo
-
-  const tentativas = row.reanalises || 0
-
-  if (limite > 0 && tentativas >= limite) return false
-
-  const analyzedAt = row?.analise?.analyzedAt
-
-  const horas = hoursBetween(analyzedAt)
-
-  if (tempoMin > 0 && horas < tempoMin) return false
-
-  return true
-}
-
-const canReinforce = (row) => {
-  if (row.status !== REQUEST_STATUS.WAITING) return false
-
-  const limite = settings.value.espera.limite
-  const tempoMin = settings.value.espera.tempo
-
-  const tentativas = row.reforcos || 0
-
-  if (limite > 0 && tentativas >= limite) return false
-
-  const createdAt = row.createdAt
-
-  const horas = hoursBetween(createdAt)
-
-  if (tempoMin > 0 && horas < tempoMin) return false
-
-  return true
-}
 
 const { getRequests, requestReanalysis, reinforceRequest, duplicateRequest } = useRequests()
 
+/* ===========================================================
+ * DIALOG REANÁLISE / REFORÇO
+ * =========================================================== */
+
+const analysisDialog = reactive({
+  open: false,
+  type: 'reanalysis',
+  request: null,
+  justification: '',
+})
+
+const dialogLoading = ref(false)
+
+const openReanalysisDialog = (request) => {
+  analysisDialog.open = true
+  analysisDialog.type = 'reanalysis'
+  analysisDialog.request = structuredClone(request)
+  analysisDialog.justification = ''
+}
+
+const openReinforceDialog = (request) => {
+  analysisDialog.open = true
+  analysisDialog.type = 'reinforce'
+  analysisDialog.request = structuredClone(request)
+  analysisDialog.justification = ''
+}
+
+const closeAnalysisDialog = () => {
+  analysisDialog.open = false
+  analysisDialog.type = 'reanalysis'
+  analysisDialog.request = null
+  analysisDialog.justification = ''
+}
+
+const confirmAnalysisRequest = async () => {
+  if (!analysisDialog.justification.trim()) {
+    notifyError('Informe uma justificativa.')
+    return
+  }
+
+  if (analysisDialog.type === 'reanalysis') {
+    await handleReanalysis()
+  } else {
+    await handleReinforce()
+  }
+}
+
+/* ===========================================================
+ * SETTINGS
+ * =========================================================== */
+
+const settings = ref({
+  indeferido: {
+    tempo: 0,
+    limite: 0,
+  },
+
+  espera: {
+    tempo: 0,
+    limite: 0,
+  },
+})
+
+/* ===========================================================
+ * KPIs
+ * =========================================================== */
+
 const stats = computed(() => ({
   total: rows.value.length,
-  approved: rows.value.filter((i) => i.status === REQUEST_STATUS.APPROVED).length,
-  rejected: rows.value.filter((i) => i.status === REQUEST_STATUS.REJECTED).length,
-  waiting: rows.value.filter((i) => i.status === REQUEST_STATUS.WAITING).length,
-  realized: rows.value.filter((i) => i.status === REQUEST_STATUS.REALIZED).length,
-  delivered: rows.value.filter((i) => i.status === REQUEST_STATUS.DELIVERED).length,
-  finished: rows.value.filter((i) => i.status === REQUEST_STATUS.FINISHED).length,
+
+  approved: rows.value.filter((r) => r.status === REQUEST_STATUS.APPROVED).length,
+
+  rejected: rows.value.filter((r) => r.status === REQUEST_STATUS.REJECTED).length,
+
+  waiting: rows.value.filter((r) => r.status === REQUEST_STATUS.WAITING).length,
+
+  realized: rows.value.filter((r) => r.status === REQUEST_STATUS.REALIZED).length,
+
+  delivered: rows.value.filter((r) => r.status === REQUEST_STATUS.DELIVERED).length,
+
+  finished: rows.value.filter((r) => r.status === REQUEST_STATUS.FINISHED).length,
 }))
 
+/* ===========================================================
+ * TABELA
+ * =========================================================== */
+
 const columns = [
-  { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left', sortable: true },
-  { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
-  { name: 'valorTotal', label: 'Valor', field: 'valorTotal', align: 'right', sortable: true },
-  { name: 'setorNome', label: 'Setor', field: 'setorNome', sortable: true },
-  { name: 'status', label: 'Status', field: 'status', align: 'center', sortable: true },
-  { name: 'createdAt', label: 'Data', field: 'createdAt', align: 'center', sortable: true },
-  { name: 'actions', label: 'Ações', field: 'actions', align: 'center' },
+  {
+    name: 'requestNumber',
+    label: 'Número',
+    field: 'requestNumber',
+    align: 'left',
+    sortable: true,
+  },
+  {
+    name: 'titulo',
+    label: 'Produto',
+    field: 'titulo',
+    align: 'left',
+    sortable: true,
+  },
+  {
+    name: 'valorTotal',
+    label: 'Valor',
+    field: 'valorTotal',
+    align: 'right',
+    sortable: true,
+  },
+  {
+    name: 'setorNome',
+    label: 'Setor',
+    field: 'setorNome',
+    sortable: true,
+  },
+  {
+    name: 'status',
+    label: 'Status',
+    field: 'status',
+    align: 'center',
+    sortable: true,
+  },
+  {
+    name: 'createdAt',
+    label: 'Data',
+    field: 'createdAt',
+    align: 'center',
+    sortable: true,
+  },
+  {
+    name: 'actions',
+    label: 'Ações',
+    field: 'actions',
+    align: 'center',
+  },
 ]
 
 const filteredRows = computed(() => {
@@ -384,6 +530,83 @@ const filteredRows = computed(() => {
     item.titulo?.toLowerCase().includes(search.value.toLowerCase()),
   )
 })
+
+/* ===========================================================
+ * SETTINGS
+ * =========================================================== */
+
+const loadSettings = async () => {
+  try {
+    const data = await api.getById('request_settings', 'global')
+
+    if (data) {
+      settings.value = {
+        indeferido: data.indeferido || {
+          tempo: 0,
+          limite: 0,
+        },
+
+        espera: data.espera || {
+          tempo: 0,
+          limite: 0,
+        },
+      }
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+/* ===========================================================
+ * REGRAS
+ * =========================================================== */
+
+const hoursBetween = (date) => {
+  if (!date) return Infinity
+
+  const d = date?.toDate ? date.toDate() : new Date(date)
+  return (new Date() - d) / (1000 * 60 * 60)
+}
+
+const canRequestReanalysis = (row) => {
+  if (row.status !== REQUEST_STATUS.REJECTED) return false
+
+  const tentativas = row.reanalises || 0
+
+  if (settings.value.indeferido.limite > 0 && tentativas >= settings.value.indeferido.limite) {
+    return false
+  }
+
+  const horas = hoursBetween(row?.analise?.analyzedAt)
+
+  if (settings.value.indeferido.tempo > 0 && horas < settings.value.indeferido.tempo) {
+    return false
+  }
+
+  return true
+}
+
+const canReinforce = (row) => {
+  if (row.status !== REQUEST_STATUS.WAITING) return false
+
+  const tentativas = row.reforcos || 0
+
+  if (settings.value.espera.limite > 0 && tentativas >= settings.value.espera.limite) {
+    return false
+  }
+
+  const horas = hoursBetween(row.createdAt)
+
+  if (settings.value.espera.tempo > 0 && horas < settings.value.espera.tempo) {
+    return false
+  }
+
+  return true
+}
+
+/* ===========================================================
+ * CARREGAMENTO
+ * =========================================================== */
 
 const loadRequests = async () => {
   loading.value = true
@@ -403,7 +626,8 @@ const loadRequests = async () => {
           REQUEST_STATUS.FINISHED,
         ].includes(item.status),
       )
-  } catch {
+  } catch (err) {
+    console.error(err)
     notifyError('Erro ao carregar histórico')
   } finally {
     loading.value = false
@@ -414,101 +638,141 @@ const viewRequest = (row) => {
   router.push(`/app/buy/details/${row.id}`)
 }
 
-const handleReanalysis = async (request) => {
+/* ===========================================================
+ * REANÁLISE
+ * =========================================================== */
+
+const handleReanalysis = async () => {
+  dialogLoading.value = true
+
   try {
+    const request = analysisDialog.request
+
     const before = structuredClone(request)
+
+    const payload = {
+      reanalises: (request.reanalises || 0) + 1,
+
+      reanalysisRequested: true,
+
+      reanalise: {
+        ...(request.reanalise || {}),
+
+        justificativa: analysisDialog.justification,
+
+        usuarioId: profile.value?.userId || profile.value?.id,
+        usuarioNome: profile.value?.nome || profile.value?.displayName,
+
+        data: new Date(),
+      },
+    }
 
     await requestReanalysis({
       request,
       user: profile.value,
-      motivo: 'Solicitado pelo usuário',
+      motivo: analysisDialog.justification,
+      extraData: payload,
     })
+
+    const after = structuredClone(before)
+
+    after.status = REQUEST_STATUS.REANALYSIS
+
+    after.reanalises = (request.reanalises || 0) + 1
+
+    after.reanalysisRequested = true
+
+    after.reanalise = payload.reanalise
 
     await addLog({
       module: 'Solicitações',
       action: 'REQUEST_REANALYSIS',
-
-      entity: 'request',
-      entityId: request.id,
-
-      requestNumber: request.requestNumber,
-
       description: `Solicitou reanálise da solicitação ${request.requestNumber}`,
-
+      documentId: request.id,
       before,
-
-      after: {
-        status: REQUEST_STATUS.REANALYSIS,
-        reanalises: (request.reanalises || 0) + 1,
-      },
-
-      metadata: {
-        requestNumber: request.requestNumber,
-        requestId: request.id,
-
-        titulo: request.titulo,
-        setor: request.setorNome,
-
-        solicitante: request.solicitanteNome,
-        solicitanteEmail: request.solicitanteEmail,
-      },
+      after,
     })
 
-    notifySuccess('Solicitação enviada para reanálise')
-    if (!hasPermission('history.reanalyze')) return
+    notifySuccess('Solicitação enviada para reanálise.')
+
+    closeAnalysisDialog()
+
     loadRequests()
   } catch (err) {
-    console.error('ERRO REANALISE', err)
-    notifyError('Erro ao solicitar reanálise')
+    console.error(err)
+
+    notifyError('Erro ao solicitar reanálise.')
+  } finally {
+    dialogLoading.value = false
   }
 }
 
-const handleReinforce = async (request) => {
+/* ===========================================================
+ * REFORÇO
+ * =========================================================== */
+
+const handleReinforce = async () => {
+  dialogLoading.value = true
+
   try {
+    const request = analysisDialog.request
+
     const before = structuredClone(request)
+
+    const payload = {
+      reforcos: (request.reforcos || 0) + 1,
+
+      reforco: {
+        ...(request.reforco || {}),
+
+        justificativa: analysisDialog.justification,
+
+        usuarioId: profile.value?.userId || profile.value?.id,
+        usuarioNome: profile.value?.nome || profile.value?.displayName,
+
+        data: new Date(),
+      },
+    }
 
     await reinforceRequest({
       request,
       user: profile.value,
+      motivo: analysisDialog.justification,
+      extraData: payload,
     })
+
+    const after = structuredClone(before)
+
+    after.reforcos = (request.reforcos || 0) + 1
+
+    after.reforco = payload.reforco
 
     await addLog({
       module: 'Solicitações',
       action: 'REINFORCE',
-
-      entity: 'request',
-      entityId: request.id,
-
-      requestNumber: request.requestNumber,
-
-      description: `Solicitou reforço para a solicitação ${request.requestNumber}`,
-
+      description: `Solicitou reforço da solicitação ${request.requestNumber}`,
+      documentId: request.id,
       before,
-
-      after: {
-        status: REQUEST_STATUS.WAITING,
-        reforcos: (request.reforcos || 0) + 1,
-      },
-
-      metadata: {
-        requestNumber: request.requestNumber,
-        requestId: request.id,
-
-        titulo: request.titulo,
-        setor: request.setorNome,
-
-        solicitante: request.solicitanteNome,
-        solicitanteEmail: request.solicitanteEmail,
-      },
+      after,
     })
 
-    notifySuccess('Solicitação enviada com prioridade')
-    if (!hasPermission('history.reinforcement')) return
+    notifySuccess('Solicitação enviada com prioridade.')
+
+    closeAnalysisDialog()
+
     loadRequests()
-  } catch {
-    notifyError('Erro ao solicitar reforço')
+  } catch (err) {
+    console.error(err)
+
+    notifyError('Erro ao solicitar reforço.')
+  } finally {
+    dialogLoading.value = false
   }
 }
+
+/* ===========================================================
+ * DUPLICAR SOLICITAÇÃO
+ * =========================================================== */
 
 const handleDuplicate = async (request) => {
   try {
@@ -519,9 +783,11 @@ const handleDuplicate = async (request) => {
 
     await addLog({
       module: 'Solicitações',
+
       action: 'DUPLICATE',
 
       entity: 'request',
+
       entityId: request.id,
 
       requestNumber: request.requestNumber,
@@ -537,11 +803,11 @@ const handleDuplicate = async (request) => {
       },
 
       metadata: {
-        requestNumber: request.requestNumber,
-        duplicatedRequestNumber: newRequest?.requestNumber || null,
-
         requestId: request.id,
         duplicatedRequestId: newRequest?.id || null,
+
+        requestNumber: request.requestNumber,
+        duplicatedRequestNumber: newRequest?.requestNumber || null,
 
         titulo: request.titulo,
         setor: request.setorNome,
@@ -551,30 +817,38 @@ const handleDuplicate = async (request) => {
       },
     })
 
-    notifySuccess('Nova solicitação criada')
-    if (!hasPermission('history.copy')) return
-    router.push('/app/buy/new-request')
-  } catch (error) {
-    console.error('ERRO DUPLICAR', error)
+    notifySuccess('Nova solicitação criada.')
 
-    notifyError('Erro ao duplicar solicitação')
+    router.push('/app/buy/new-request')
+  } catch (err) {
+    console.error(err)
+
+    notifyError('Erro ao duplicar solicitação.')
   }
 }
+
+/* ===========================================================
+ * FORMATAÇÃO
+ * =========================================================== */
 
 const formatDate = (date) => {
   if (!date) return '-'
 
   try {
     const value = date?.toDate ? date.toDate() : new Date(date)
+
     return value.toLocaleDateString('pt-BR')
   } catch {
     return '-'
   }
 }
 
-onMounted(() => {
-  loadRequests()
-  loadSettings()
+/* ===========================================================
+ * CICLO DE VIDA
+ * =========================================================== */
+
+onMounted(async () => {
+  await Promise.all([loadRequests(), loadSettings()])
 })
 </script>
 
@@ -619,5 +893,118 @@ onMounted(() => {
 
 :deep(.q-table tbody tr:last-child td) {
   border-bottom: none;
+}
+
+/* ======================================================
+   DIALOG REANÁLISE / REFORÇO
+====================================================== */
+
+.analysis-dialog {
+  width: min(720px, 92vw);
+  max-width: 720px;
+  max-height: 90vh;
+  border-radius: 18px;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-header {
+  background: #fafafa;
+}
+
+.analysis-dialog .q-card__section {
+  overflow-y: auto;
+}
+
+.analysis-note {
+  background: #fff8e1;
+  border-left: 5px solid #f9a825;
+}
+
+.analysis-note .q-card__section {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #424242;
+}
+
+.analysis-dialog .q-field textarea {
+  min-height: 130px;
+  max-height: 260px;
+}
+
+.analysis-dialog .q-card__actions {
+  background: #fafafa;
+}
+
+/* ======================================================
+   RESPONSIVO
+====================================================== */
+
+@media (max-width: 1024px) {
+  .analysis-dialog {
+    width: 94vw;
+    max-width: 94vw;
+    max-height: 92vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .analysis-dialog {
+    width: 96vw;
+    max-width: 96vw;
+    max-height: 96vh;
+    border-radius: 14px;
+  }
+
+  .dialog-header {
+    align-items: flex-start;
+  }
+
+  .dialog-header .text-h6 {
+    font-size: 18px;
+  }
+
+  .analysis-dialog .q-card__section {
+    padding: 18px;
+  }
+
+  .analysis-dialog .q-card__actions {
+    padding: 16px;
+  }
+
+  .analysis-dialog .q-btn {
+    width: 100%;
+  }
+
+  .analysis-dialog .q-card__actions {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-dialog {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .analysis-dialog .q-card__section {
+    padding: 16px;
+  }
+
+  .analysis-note .q-card__section {
+    font-size: 13px;
+  }
+
+  .analysis-dialog .q-field textarea {
+    min-height: 160px;
+  }
 }
 </style>

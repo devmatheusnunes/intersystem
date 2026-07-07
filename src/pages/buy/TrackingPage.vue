@@ -80,11 +80,11 @@
         <template #body-cell-titulo="props">
           <q-td :props="props">
             <div class="text-weight-medium">
-              {{ props.row.titulo }}
+              {{ props.row.produto?.titulo }}
             </div>
 
             <div class="text-caption text-grey-7">
-              {{ props.row.solicitanteNome }}
+              {{ props.row.solicitante?.nome }}
             </div>
           </q-td>
         </template>
@@ -93,7 +93,7 @@
         <template #body-cell-valorTotal="props">
           <q-td :props="props">
             {{
-              Number(props.row.valorTotal || 0).toLocaleString('pt-BR', {
+              Number(props.row.financeiro?.valorTotal || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
               })
@@ -299,61 +299,51 @@ const viewDetails = (id) => {
 const confirmDelivery = (row) => {
   Dialog.create({
     title: 'Confirmar entrega',
-
     message: 'Deseja confirmar que este pedido foi entregue?',
-
     cancel: true,
-
     persistent: true,
   }).onOk(async () => {
     try {
+      const before = structuredClone(row)
+
+      const payload = {
+        entrega: {
+          ...row.entrega,
+
+          data: new Date(),
+
+          usuarioId: profile.value?.userId || profile.value?.id,
+          usuarioNome: profile.value?.nome || profile.value?.displayName,
+        },
+      }
+
       await deliveredRequest({
         request: row,
-
         user: profile.value,
-
         observacao: 'Pedido entregue',
+        extraData: payload,
       })
+
+      const after = structuredClone(before)
+
+      Object.assign(after, payload)
+
+      after.status = REQUEST_STATUS.DELIVERED
 
       await addLog({
         module: 'Entrega',
         action: 'DELIVER',
-        entity: 'request',
-        entityId: row.id,
-        documentId: row.id,
         description: `Pedido ${row.requestNumber} marcado como entregue`,
-
-        before: {
-          requestNumber: row.requestNumber,
-          titulo: row.titulo,
-          categoria: row.categoria,
-          setorNome: row.setorNome,
-          quantidade: row.quantidade,
-          valorUnitario: row.valorUnitario,
-          valorTotal: row.valorTotal,
-          status: REQUEST_STATUS.REALIZED,
-        },
-
-        after: {
-          requestNumber: row.requestNumber,
-          titulo: row.titulo,
-          categoria: row.categoria,
-          setorNome: row.setorNome,
-          quantidade: row.quantidade,
-          valorUnitario: row.valorUnitario,
-          valorTotal: row.valorTotal,
-          status: REQUEST_STATUS.DELIVERED,
-        },
+        documentId: row.id,
+        before,
+        after,
       })
 
       notifySuccess('Pedido marcado como entregue')
 
-      if (!hasPermission('tracking.deliver')) return
-
       loadRequests()
     } catch (err) {
       console.error(err)
-
       notifyError('Erro ao confirmar entrega')
     }
   })
@@ -362,61 +352,51 @@ const confirmDelivery = (row) => {
 const confirmFinish = (row) => {
   Dialog.create({
     title: 'Finalizar processo',
-
     message: 'Deseja finalizar definitivamente este processo?',
-
     cancel: true,
-
     persistent: true,
   }).onOk(async () => {
     try {
+      const before = structuredClone(row)
+
+      const payload = {
+        finalizacao: {
+          ...row.finalizacao,
+
+          data: new Date(),
+
+          usuarioId: profile.value?.userId || profile.value?.id,
+          usuarioNome: profile.value?.nome || profile.value?.displayName,
+        },
+      }
+
       await finishRequest({
         request: row,
-
         user: profile.value,
-
         observacao: 'Processo finalizado',
+        extraData: payload,
       })
+
+      const after = structuredClone(before)
+
+      Object.assign(after, payload)
+
+      after.status = REQUEST_STATUS.FINISHED
 
       await addLog({
         module: 'Entrega',
         action: 'FINISH',
-        entity: 'request',
-        entityId: row.id,
-        documentId: row.id,
         description: `Pedido ${row.requestNumber} finalizado`,
-
-        before: {
-          requestNumber: row.requestNumber,
-          titulo: row.titulo,
-          categoria: row.categoria,
-          setorNome: row.setorNome,
-          quantidade: row.quantidade,
-          valorUnitario: row.valorUnitario,
-          valorTotal: row.valorTotal,
-          status: REQUEST_STATUS.DELIVERED,
-        },
-
-        after: {
-          requestNumber: row.requestNumber,
-          titulo: row.titulo,
-          categoria: row.categoria,
-          setorNome: row.setorNome,
-          quantidade: row.quantidade,
-          valorUnitario: row.valorUnitario,
-          valorTotal: row.valorTotal,
-          status: REQUEST_STATUS.FINISHED,
-        },
+        documentId: row.id,
+        before,
+        after,
       })
 
       notifySuccess('Processo finalizado')
 
-      if (!hasPermission('tracking.finish')) return
-
       loadRequests()
     } catch (err) {
       console.error(err)
-
       notifyError('Erro ao finalizar processo')
     }
   })

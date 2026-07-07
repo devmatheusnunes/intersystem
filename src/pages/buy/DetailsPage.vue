@@ -44,10 +44,43 @@
           <div class="section-title">Produto</div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6">
-              <q-input dense filled readonly label="Título" :model-value="request.titulo" />
+              <q-input dense filled readonly label="Título" :model-value="request.produto.titulo" />
             </div>
             <div class="col-12 col-md-6">
-              <q-input dense filled readonly label="Categoria" :model-value="request.categoria" />
+              <q-input
+                dense
+                filled
+                readonly
+                label="Categoria"
+                :model-value="request.produto.categoria"
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-input
+                dense
+                filled
+                readonly
+                label="Fornecedor"
+                :model-value="request.produto.fornecedor"
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-input
+                dense
+                filled
+                readonly
+                label="Produto URL"
+                :model-value="request.produto.produtoUrl"
+              >
+                <template v-slot:append>
+                  <q-icon
+                    v-if="request.produto.produtoUrl"
+                    name="open_in_new"
+                    class="cursor-pointer"
+                    @click="openLink(request.produto.produtoUrl)"
+                  />
+                </template>
+              </q-input>
             </div>
             <div class="col-12">
               <q-input
@@ -57,23 +90,8 @@
                 type="textarea"
                 autogrow
                 label="Descrição"
-                :model-value="request.descricao"
+                :model-value="request.produto.descricao"
               />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input dense filled readonly label="Fornecedor" :model-value="request.fornecedor" />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input dense filled readonly label="Produto URL" :model-value="request.produtoUrl">
-                <template v-slot:append>
-                  <q-icon
-                    v-if="request.produtoUrl"
-                    name="open_in_new"
-                    class="cursor-pointer"
-                    @click="openLink(request.produtoUrl)"
-                  />
-                </template>
-              </q-input>
             </div>
           </div>
         </q-card-section>
@@ -84,7 +102,7 @@
           <div class="section-title">Solicitante</div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
-              <q-input dense filled readonly label="Nome" :model-value="request.solicitanteNome" />
+              <q-input dense filled readonly label="Nome" :model-value="request.solicitante.nome" />
             </div>
             <div class="col-12 col-md-4">
               <q-input
@@ -92,11 +110,17 @@
                 filled
                 readonly
                 label="Email"
-                :model-value="request.solicitanteEmail"
+                :model-value="request.solicitante.email"
               />
             </div>
             <div class="col-12 col-md-4">
-              <q-input dense filled readonly label="Setor" :model-value="request.setorNome" />
+              <q-input
+                dense
+                filled
+                readonly
+                label="Setor"
+                :model-value="request.solicitante.setorNome"
+              />
             </div>
           </div>
         </q-card-section>
@@ -112,7 +136,7 @@
                 filled
                 readonly
                 label="Valor Unitário"
-                :model-value="formatCurrency(request.valorUnitario)"
+                :model-value="formatCurrency(request.financeiro.valorUnitario)"
               />
             </div>
             <div class="col-12 col-md-6">
@@ -121,7 +145,7 @@
                 filled
                 readonly
                 label="Valor Total"
-                :model-value="formatCurrency(request.valorTotal)"
+                :model-value="formatCurrency(request.financeiro.valorTotal)"
               />
             </div>
           </div>
@@ -131,7 +155,9 @@
       <q-card flat bordered class="q-mb-md section-card">
         <q-card-section>
           <div class="section-title">Justificativa</div>
-          <div class="justificativa-box">{{ request.justificativa || 'Não informada' }}</div>
+          <div class="justificativa-box">
+            {{ request.solicitacao.justificativa || 'Não informada' }}
+          </div>
         </q-card-section>
       </q-card>
       <!-- HISTÓRICO -->
@@ -264,12 +290,12 @@ const summary = computed(() => [
   },
   {
     label: 'Valor Total',
-    value: formatCurrency(request.value?.valorTotal),
+    value: formatCurrency(request.value?.financeiro.valorTotal),
     icon: 'payments',
   },
   {
     label: 'Quantidade',
-    value: request.value?.quantidade,
+    value: request.value?.produto.quantidade,
     icon: 'inventory',
   },
 ])

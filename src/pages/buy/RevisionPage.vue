@@ -41,11 +41,11 @@
         <template #body-cell-titulo="props">
           <q-td :props="props">
             <div class="text-weight-medium">
-              {{ props.row.titulo }}
+              {{ props.row.produto.titulo }}
             </div>
 
             <div class="text-caption text-grey-7">
-              {{ props.row.solicitanteNome }}
+              {{ props.row.solicitante.nome }}
             </div>
           </q-td>
         </template>
@@ -53,14 +53,14 @@
         <!-- SETOR -->
         <template #body-cell-setorNome="props">
           <q-td :props="props">
-            {{ props.row.setorNome }}
+            {{ props.row.solicitante.setorNome }}
           </q-td>
         </template>
 
         <!-- VALOR -->
         <template #body-cell-valorTotal="props">
           <q-td :props="props">
-            {{ formatMoney(props.row.valorTotal) }}
+            {{ formatMoney(props.row.financeiro.valorTotal) }}
           </q-td>
         </template>
 
