@@ -1,94 +1,185 @@
-export const createRequestModel = () => ({
-  requestNumber: '',
+export function createRequestModel() {
+  return {
+    /* =========================================================
+     * IDENTIFICAÇÃO
+     * ======================================================= */
+    requestNumber: '',
+    status: '',
 
-  status: null,
+    /* =========================================================
+     * PRODUTO
+     * ======================================================= */
 
-  isEletronico: false,
+    produto: {
+      titulo: '',
+      categoria: '',
+      descricao: '',
+      fornecedor: '',
+      produtoUrl: '',
+      quantidade: 1,
+    },
 
-  prioridadeAnalise: false,
+    /* =========================================================
+     * SOLICITANTE
+     * ======================================================= */
 
-  prioridadeData: null,
+    solicitante: {
+      id: '',
+      nome: '',
+      email: '',
+      setorId: '',
+      setorNome: '',
+    },
 
-  jaFoiIndeferido: false,
+    /* =========================================================
+     * FINANCEIRO
+     * ======================================================= */
 
-  reanalises: 0,
+    financeiro: {
+      valorUnitario: 0,
+      valorTotal: 0,
+      valorComprado: 0,
+    },
 
-  reanalysisRequested: false,
+    /* =========================================================
+     * SOLICITAÇÃO
+     * ======================================================= */
 
-  reanalysisRequestedAt: null,
+    solicitacao: {
+      justificativa: '',
 
-  originalRequestId: null,
+      createdAt: null,
+      updatedAt: null,
 
-  analyzedAt: null,
+      usuarioId: '',
+      usuarioNome: '',
+    },
 
-  analyzedBy: '',
+    /* =========================================================
+     * ORÇAMENTO
+     * ======================================================= */
 
-  analyzedByName: '',
+    orcamento: {
+      data: null,
 
-  analysisObservation: '',
+      usuarioId: '',
+      usuarioNome: '',
+    },
 
-  solicitanteId: '',
+    /* =========================================================
+     * REVISÃO
+     * ======================================================= */
 
-  solicitanteNome: '',
+    revisao: {
+      justificativa: '',
 
-  solicitanteEmail: '',
+      data: null,
 
-  setorId: '',
+      usuarioId: '',
+      usuarioNome: '',
+    },
 
-  setorNome: '',
+    /* =========================================================
+     * ANÁLISE
+     * ======================================================= */
 
-  titulo: '',
+    analise: {
+      justificativa: '',
 
-  descricao: '',
+      decisao: '',
 
-  categoria: '',
+      data: null,
 
-  justificativa: '',
+      usuarioId: '',
+      usuarioNome: '',
+    },
 
-  quantidade: 1,
+    /* =========================================================
+     * PAGAMENTO
+     * ======================================================= */
 
-  produtoUrl: '',
+    pagamento: {
+      justificativa: '',
 
-  fornecedor: '',
+      formaPagamento: '',
+      detalhePagemento: '',
 
-  valorUnitario: 0,
+      data: null,
 
-  valorTotal: 0,
+      usuarioId: '',
+      usuarioNome: '',
+    },
 
-  revisao: {
-    observacao: '',
-    usuarioId: '',
-    usuarioNome: '',
-    data: null,
-  },
+    /* =========================================================
+     * ENTREGA
+     * ======================================================= */
 
-  analise: {
-    decisao: null,
-    observacao: '',
-    usuarioId: '',
-    usuarioNome: '',
-    data: null,
-  },
+    entrega: {
+      data: null,
 
-  reanalise: {
-    motivo: '',
-    usuarioId: '',
-    usuarioNome: '',
-    data: null,
-  },
+      usuarioId: '',
+      usuarioNome: '',
+    },
 
-  pagamento: {
-    comprado: false,
-    dataCompra: null,
-    usuarioId: '',
-    usuarioNome: '',
-  },
+    /* =========================================================
+     * FINALIZAÇÃO
+     * ======================================================= */
 
-  comprovantes: [],
+    finalizacao: {
+      data: null,
 
-  historico: [],
+      usuarioId: '',
+      usuarioNome: '',
+    },
 
-  createdAt: null,
+    /* =========================================================
+     * REANÁLISES
+     * ======================================================= */
 
-  updatedAt: null,
-})
+    reanalises: [],
+
+    /*
+      {
+        data,
+        justificativa,
+        usuarioId,
+        usuarioNome
+      }
+    */
+
+    /* =========================================================
+     * REFORÇOS
+     * ======================================================= */
+
+    reforcos: [],
+
+    /*
+      {
+        data,
+        justificativa,
+        usuarioId,
+        usuarioNome
+      }
+    */
+
+    /* =========================================================
+     * HISTÓRICO
+     * ======================================================= */
+
+    historico: [],
+
+    /*
+      {
+        action,
+        status,
+        observacao,
+
+        usuarioId,
+        usuarioNome,
+        userEmail,
+
+        createdAt
+      }
+    */
+  }
+}

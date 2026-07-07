@@ -16,9 +16,9 @@
       <div class="col-12 col-sm-6 col-md">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
-            <div class="text-caption text-grey-7">Em orçamento</div>
+            <div class="text-caption text-grey-7">Em Orçamento</div>
             <div class="text-h4 text-budget text-weight-bold">
-              {{ stats.orcamento }}
+              {{ stats.budget }}
             </div>
           </q-card-section>
         </q-card>
@@ -29,7 +29,7 @@
           <q-card-section>
             <div class="text-caption text-grey-7">Em Revisão</div>
             <div class="text-h4 text-revision text-weight-bold">
-              {{ stats.revisao }}
+              {{ stats.revision }}
             </div>
           </q-card-section>
         </q-card>
@@ -40,24 +40,25 @@
           <q-card-section>
             <div class="text-caption text-grey-7">Pendente Análise</div>
             <div class="text-h4 text-analysis text-weight-bold">
-              {{ stats.analise }}
+              {{ stats.analysis }}
             </div>
           </q-card-section>
         </q-card>
       </div>
+
       <div class="col-12 col-sm-6 col-md">
         <q-card flat bordered class="kpi-card">
           <q-card-section>
             <div class="text-caption text-grey-7">Em Reanálise</div>
             <div class="text-h4 text-reanalysis text-weight-bold">
-              {{ stats.reanalise }}
+              {{ stats.reanalysis }}
             </div>
           </q-card-section>
         </q-card>
       </div>
     </div>
 
-    <!-- Tabela -->
+    <!-- TABELA -->
     <q-card flat bordered class="table-card">
       <q-table
         flat
@@ -71,7 +72,7 @@
           <div class="row items-center full-width q-gutter-md">
             <div>
               <div class="text-h6 text-weight-bold">Solicitações de Compras</div>
-              <div class="text-caption text-grey-7">Gerencie as solicitações cadastradas</div>
+              <div class="text-caption text-grey-7">Gerencie as solicitações</div>
             </div>
 
             <q-space />
@@ -104,11 +105,10 @@
         <template #body-cell-titulo="props">
           <q-td :props="props">
             <div class="text-weight-medium">
-              {{ props.row.titulo }}
+              {{ props.row.produto.titulo }}
             </div>
-
             <div class="text-caption text-grey-7">
-              {{ props.row.solicitanteNome }}
+              {{ props.row.solicitante.nome }}
             </div>
           </q-td>
         </template>
@@ -117,7 +117,7 @@
         <template #body-cell-valorTotal="props">
           <q-td :props="props">
             {{
-              Number(props.row.valorTotal || 0).toLocaleString('pt-BR', {
+              Number(props.row.financeiro.valorTotal || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
               })
@@ -128,7 +128,7 @@
         <!-- Setor -->
         <template #body-cell-setorNome="props">
           <q-td :props="props">
-            {{ props.row.setorNome }}
+            {{ props.row.solicitante.setorNome }}
           </q-td>
         </template>
 
@@ -136,30 +136,30 @@
         <template #body-cell-status="props">
           <q-td :props="props">
             <q-chip
-              v-if="props.row.status === REQUEST_STATUS.PENDING_ANALYSIS"
-              color="analysis"
-              text-color="white"
-              icon="hourglass_top"
-            >
-              Pendente Análise
-            </q-chip>
-
-            <q-chip
-              v-else-if="props.row.status === REQUEST_STATUS.BUDGET"
+              v-if="props.row.status === REQUEST_STATUS.BUDGET"
               color="budget"
               text-color="white"
               icon="request_page"
             >
-              Em Orçamento
+              Orçamento
             </q-chip>
 
             <q-chip
               v-else-if="props.row.status === REQUEST_STATUS.REVISION"
               color="revision"
               text-color="white"
-              icon="grading"
+              icon="edit"
             >
-              Em Revisão
+              Revisão
+            </q-chip>
+
+            <q-chip
+              v-else-if="props.row.status === REQUEST_STATUS.PENDING_ANALYSIS"
+              color="analysis"
+              text-color="white"
+              icon="hourglass_top"
+            >
+              Análise
             </q-chip>
 
             <q-chip
@@ -168,7 +168,7 @@
               text-color="white"
               icon="refresh"
             >
-              Em Reanálise
+              Reanálise
             </q-chip>
 
             <q-chip v-else color="grey" text-color="white">
@@ -187,10 +187,13 @@
         <!-- Ações -->
         <template #body-cell-actions="props">
           <q-td :props="props">
-            <!-- 🔥 AGORA VAI PARA A PÁGINA -->
-            <q-btn flat round color="primary" icon="visibility" @click="viewDetails(props.row.id)">
-              <q-tooltip>Visualizar</q-tooltip>
-            </q-btn>
+            <q-btn
+              flat
+              round
+              color="primary"
+              icon="visibility"
+              @click="viewDetails(props.row.id)"
+            />
 
             <q-btn
               flat
@@ -199,9 +202,7 @@
               icon="edit"
               :disable="!canEdit(props.row)"
               @click="editRequest(props.row.id)"
-            >
-              <q-tooltip>Editar</q-tooltip>
-            </q-btn>
+            />
 
             <q-btn
               flat
@@ -210,9 +211,7 @@
               icon="delete"
               :disable="!canDelete(props.row)"
               @click="confirmDelete(props.row)"
-            >
-              <q-tooltip>Excluir</q-tooltip>
-            </q-btn>
+            />
           </q-td>
         </template>
 
@@ -242,9 +241,7 @@ const router = useRouter()
 
 const { notifyError, notifySuccess } = useNotify()
 const { canViewItem, can } = usePermissions()
-
 const { getRequests, deleteRequest } = useRequests()
-
 const { addLog } = useSystemLog()
 
 const loading = ref(false)
@@ -263,18 +260,15 @@ const columns = [
 
 const stats = computed(() => ({
   total: rows.value.length,
-  revisao: rows.value.filter((i) => i.status === REQUEST_STATUS.REVISION).length,
-  orcamento: rows.value.filter((i) => i.status === REQUEST_STATUS.BUDGET).length,
-  analise: rows.value.filter((i) => i.status === REQUEST_STATUS.PENDING_ANALYSIS).length,
-  reanalise: rows.value.filter((i) => i.status === REQUEST_STATUS.REANALYSIS).length,
+  budget: rows.value.filter((i) => i.status === REQUEST_STATUS.BUDGET).length,
+  revision: rows.value.filter((i) => i.status === REQUEST_STATUS.REVISION).length,
+  analysis: rows.value.filter((i) => i.status === REQUEST_STATUS.PENDING_ANALYSIS).length,
+  reanalysis: rows.value.filter((i) => i.status === REQUEST_STATUS.REANALYSIS).length,
 }))
 
 const filteredRows = computed(() => {
   if (!search.value) return rows.value
-
-  return rows.value.filter((item) =>
-    item.titulo?.toLowerCase().includes(search.value.toLowerCase()),
-  )
+  return rows.value.filter((i) => i.titulo?.toLowerCase().includes(search.value.toLowerCase()))
 })
 
 const loadRequests = async () => {
@@ -283,16 +277,14 @@ const loadRequests = async () => {
   try {
     const data = await getRequests()
 
-    const allowedStatuses = [
+    const allowed = [
       REQUEST_STATUS.BUDGET,
       REQUEST_STATUS.REVISION,
       REQUEST_STATUS.PENDING_ANALYSIS,
       REQUEST_STATUS.REANALYSIS,
     ]
 
-    rows.value = data
-      .filter((item) => canViewItem(item))
-      .filter((item) => allowedStatuses.includes(item.status))
+    rows.value = data.filter((i) => canViewItem(i)).filter((i) => allowed.includes(i.status))
   } catch {
     notifyError('Erro ao carregar solicitações')
   } finally {
@@ -300,43 +292,24 @@ const loadRequests = async () => {
   }
 }
 
-/* 🔥 NOVA FUNÇÃO */
-const viewDetails = (id) => {
-  router.push(`/app/buy/details/${id}`)
-}
+const viewDetails = (id) => router.push(`/app/buy/details/${id}`)
+const goToNewRequest = () => router.push('/app/buy/new-request')
+const editRequest = (id) => router.push(`/app/buy/edit-request/${id}`)
 
-const goToNewRequest = () => {
-  router.push('/app/buy/new-request')
-}
+const canEdit = (row) =>
+  can('requests.edit') && [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION].includes(row.status)
 
-const editRequest = (id) => {
-  router.push(`/app/buy/edit-request/${id}`)
-}
+const canDelete = (row) =>
+  can('requests.delete') && [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION].includes(row.status)
 
-const canEdit = (row) => {
-  return (
-    can('requests.edit') && [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION].includes(row.status)
-  )
-}
-
-const canDelete = (row) => {
-  return (
-    can('requests.delete') && [REQUEST_STATUS.BUDGET, REQUEST_STATUS.REVISION].includes(row.status)
-  )
-}
-
-// =========================================
-// DELETE (ÚNICO LOG DA PÁGINA)
-// =========================================
 const confirmDelete = (row) => {
   Dialog.create({
     title: 'Excluir Solicitação',
-    message: 'Deseja realmente excluir esta solicitação?',
+    message: 'Deseja realmente excluir?',
     cancel: true,
     persistent: true,
   }).onOk(async () => {
     try {
-      // snapshot antes da exclusão (novo padrão)
       const before = { ...row }
 
       await deleteRequest(row.id)
@@ -344,31 +317,24 @@ const confirmDelete = (row) => {
       await addLog({
         module: 'Solicitações',
         action: 'DELETE',
-        description: `Excluiu a solicitação ${row.requestNumber}`,
+        description: `Excluiu ${row.requestNumber}`,
         documentId: row.id,
         before,
-        after: null,
       })
 
-      rows.value = rows.value.filter((item) => item.id !== row.id)
+      rows.value = rows.value.filter((i) => i.id !== row.id)
 
-      notifySuccess('Solicitação excluída com sucesso')
-    } catch (error) {
-      console.error(error)
-      notifyError('Erro ao excluir solicitação')
+      notifySuccess('Excluído com sucesso')
+    } catch {
+      notifyError('Erro ao excluir')
     }
   })
 }
 
 const formatDate = (date) => {
   if (!date) return '-'
-
-  try {
-    const value = date?.toDate ? date.toDate() : new Date(date)
-    return value.toLocaleDateString('pt-BR')
-  } catch {
-    return '-'
-  }
+  const d = date?.toDate ? date.toDate() : new Date(date)
+  return d.toLocaleDateString('pt-BR')
 }
 
 onMounted(loadRequests)

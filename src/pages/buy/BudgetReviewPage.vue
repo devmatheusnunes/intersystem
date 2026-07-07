@@ -33,15 +33,31 @@
 
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6">
-              <q-input dense filled readonly label="Título" :model-value="request.titulo" />
+              <q-input dense filled readonly label="Título" :model-value="request.produto.titulo" />
             </div>
 
             <div class="col-12 col-md-6">
-              <q-input dense filled readonly label="Categoria" :model-value="request.categoria" />
+              <q-input
+                dense
+                filled
+                readonly
+                label="Categoria"
+                :model-value="request.produto.categoria"
+              />
             </div>
 
-            <div class="col-12 col-md-4">
-              <q-input dense filled readonly label="Quantidade" :model-value="request.quantidade" />
+            <div class="col-12 col-md-6">
+              <q-input
+                dense
+                filled
+                readonly
+                label="Quantidade"
+                :model-value="request.produto.quantidade"
+              />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <q-input dense filled label="Fornecedor" v-model="form.fornecedor" />
             </div>
 
             <div class="col-12">
@@ -52,7 +68,7 @@
                 type="textarea"
                 autogrow
                 label="Descrição"
-                :model-value="request.descricao"
+                :model-value="request.produto.descricao"
               />
             </div>
           </div>
@@ -65,7 +81,7 @@
           <div class="section-title">Justificativa</div>
 
           <div class="justificativa-box">
-            {{ request.justificativa || 'Não informada' }}
+            {{ request.solicitacao.justificativa || 'Não informada' }}
           </div>
         </q-card-section>
       </q-card>
@@ -111,8 +127,8 @@
                 filled
                 type="textarea"
                 autogrow
-                label="Observação"
-                v-model="form.observacao"
+                label="Justificativa da Revisão"
+                v-model="form.justificativa"
               />
             </div>
           </div>
@@ -144,52 +160,39 @@ import useSystemLog from 'src/composables/UseSystemLog'
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
-const returnRoute = computed(() => {
-  return isBudget.value ? '/app/buy/budget' : '/app/buy/revision'
-})
-
-// ROUTER
 const route = useRoute()
 const router = useRouter()
 
-// COMPOSABLES
 const { getRequestById, changeStatus } = useRequests()
 const { user } = useAuthUser()
 const { addLog } = useSystemLog()
 
-// STATE
 const loading = ref(true)
 const request = ref(null)
 
-// MODE
 const mode = computed(() => route.query.mode || 'budget')
 const isBudget = computed(() => mode.value === 'budget')
 
-// FORM
+const returnRoute = computed(() => (isBudget.value ? '/app/buy/budget' : '/app/buy/revision'))
+
 const form = ref({
   produtoUrl: '',
+  fornecedor: '',
   valorUnitario: 0,
   valorTotal: 0,
   formaPagamento: '',
-  observacao: '',
+  justificativa: '',
 })
 
-// =========================
-// HELPERS
-// =========================
-
 watch(
-  () => [form.value.valorUnitario, request.value?.quantidade],
+  () => [form.value.valorUnitario, request.value?.produto?.quantidade],
   () => {
     form.value.valorTotal =
-      Number(form.value.valorUnitario || 0) * Number(request.value?.quantidade || 0)
+      Number(form.value.valorUnitario || 0) * Number(request.value?.produto?.quantidade || 0)
   },
   { immediate: true },
 )
 
-// =========================
-// LOAD
-// =========================
 onMounted(async () => {
   try {
     const data = await getRequestById(route.params.id)
@@ -199,11 +202,12 @@ onMounted(async () => {
     request.value = data
 
     form.value = {
-      produtoUrl: data.produtoUrl || '',
-      valorUnitario: data.valorUnitario || 0,
-      valorTotal: data.valorTotal || 0,
-      formaPagamento: data.formaPagamento || '',
-      observacao: '',
+      produtoUrl: data.produto?.produtoUrl || '',
+      fornecedor: data.produto?.fornecedor || '',
+      valorUnitario: data.financeiro?.valorUnitario || 0,
+      valorTotal: data.financeiro?.valorTotal || 0,
+      formaPagamento: data.pagamento?.formaPagamento || '',
+      justificativa: data.revisao?.justificativa || '',
     }
   } catch (err) {
     console.error(err)
@@ -213,32 +217,61 @@ onMounted(async () => {
   }
 })
 
-// =========================
-// SAVE
-// =========================
 const save = async () => {
   try {
-    if (!form.value.produtoUrl) throw new Error('Informe a URL')
-    if (!form.value.valorUnitario) throw new Error('Informe o valor')
-    if (!form.value.formaPagamento) throw new Error('Informe pagamento')
+    if (!form.value.produtoUrl) throw new Error('Informe a URL do produto')
 
-    if (!request.value?.id) throw new Error('ID inválido')
+    if (!form.value.valorUnitario) throw new Error('Informe o valor unitário')
+
+    if (!form.value.formaPagamento) throw new Error('Informe a forma de pagamento')
 
     const before = structuredClone(request.value)
 
     const newStatus = isBudget.value ? REQUEST_STATUS.REVISION : REQUEST_STATUS.PENDING_ANALYSIS
 
     const payload = {
-      produtoUrl: form.value.produtoUrl,
-      valorUnitario: Number(form.value.valorUnitario),
-      valorTotal: Number(form.value.valorTotal),
-      formaPagamento: form.value.formaPagamento,
+      produto: {
+        ...request.value.produto,
+        fornecedor: form.value.fornecedor,
+        produtoUrl: form.value.produtoUrl,
+      },
+
+      financeiro: {
+        ...request.value.financeiro,
+        valorUnitario: Number(form.value.valorUnitario),
+        valorTotal: Number(form.value.valorTotal),
+      },
+
+      pagamento: {
+        ...request.value.pagamento,
+        formaPagamento: form.value.formaPagamento,
+      },
+
+      orcamento: isBudget.value
+        ? {
+            ...request.value.orcamento,
+            data: new Date(),
+            usuarioId: user.value?.id || user.value?.uid || user.value?.userId || '',
+            usuarioNome: user.value?.nome || user.value?.displayName || '',
+          }
+        : request.value.orcamento,
+
+      revisao: !isBudget.value
+        ? {
+            ...request.value.revisao,
+            data: new Date(),
+            usuarioId: user.value?.id || user.value?.uid || user.value?.userId || '',
+            usuarioNome: user.value?.nome || user.value?.displayName || '',
+            justificativa: form.value.justificativa,
+          }
+        : request.value.revisao,
+
       status: newStatus,
     }
 
     const observacao = isBudget.value
       ? 'Orçamento enviado para revisão'
-      : form.value.observacao || 'Revisão realizada'
+      : form.value.justificativa || 'Revisão realizada'
 
     await changeStatus({
       request: request.value,
@@ -248,10 +281,8 @@ const save = async () => {
       extraData: payload,
     })
 
-    const after = {
-      ...before,
-      ...payload,
-    }
+    const after = structuredClone(before)
+    Object.assign(after, payload)
 
     await addLog({
       module: 'Solicitações',
@@ -266,21 +297,13 @@ const save = async () => {
 
     router.push(returnRoute.value)
   } catch (err) {
-    console.error('Erro ao salvar:', err)
+    console.error(err)
     alert(err.message || 'Erro ao salvar')
   }
 }
 
-// =========================
-// NAV
-// =========================
-const goBack = () => {
-  router.back()
-}
+const goBack = () => router.back()
 
-// =========================
-// FORMAT DATE
-// =========================
 const formatDate = (value) => {
   if (!value) return '-'
 
@@ -289,15 +312,12 @@ const formatDate = (value) => {
   return isNaN(date.getTime()) ? '-' : date.toLocaleString('pt-BR')
 }
 
-// =========================
-// TOTAL FORMATADO
-// =========================
-const formattedTotal = computed(() => {
-  return new Intl.NumberFormat('pt-BR', {
+const formattedTotal = computed(() =>
+  new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(Number(form.value.valorTotal || 0))
-})
+  }).format(Number(form.value.valorTotal || 0)),
+)
 </script>
 
 <style scoped>

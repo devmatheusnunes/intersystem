@@ -9,17 +9,15 @@ export default function useRequests() {
   const api = useApi()
   const COLLECTION = 'requestsbuy'
 
-  /* =========================================================
-   * 🧠 HELPERS (ANTI BUG)
-   * ======================================================= */
+  /* =========================
+   * HELPERS
+   * ======================= */
 
   const removeUndefined = (obj) =>
     Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
 
   const getUserId = (user) => user?.id || user?.userId || user?.uid || user?._id || null
-
   const getUserName = (user) => user?.nome || user?.name || user?.displayName || 'Usuário'
-
   const getUserEmail = (user) => user?.email || null
 
   const now = () => new Date()
@@ -31,9 +29,9 @@ export default function useRequests() {
     return isNaN(d.getTime()) ? new Date(0) : d
   }
 
-  /* =========================================================
-   * 🧾 HISTÓRICO PADRÃO
-   * ======================================================= */
+  /* =========================
+   * HISTORY
+   * ======================= */
 
   const createHistoryEntry = (status, user, observacao = '') =>
     removeUndefined({
@@ -45,9 +43,9 @@ export default function useRequests() {
       createdAt: now(),
     })
 
-  /* =========================================================
-   * 🔢 REQUEST NUMBER
-   * ======================================================= */
+  /* =========================
+   * REQUEST NUMBER
+   * ======================= */
 
   const generateRequestNumber = async () => {
     const snapshot = await getDocs(collection(db, COLLECTION))
@@ -55,12 +53,11 @@ export default function useRequests() {
     return `REQ-${String(next).padStart(6, '0')}`
   }
 
-  /* =========================================================
-   * 📥 GET
-   * ======================================================= */
+  /* =========================
+   * GET
+   * ======================= */
 
   const getRequests = async () => await api.list(COLLECTION)
-
   const getRequestById = async (id) => await api.getById(COLLECTION, id)
 
   const getRequestsByStatuses = async (statuses = []) => {
@@ -73,9 +70,9 @@ export default function useRequests() {
     return requests.filter((r) => r.solicitanteId === userId)
   }
 
-  /* =========================================================
-   * ➕ CREATE
-   * ======================================================= */
+  /* =========================
+   * CREATE
+   * ======================= */
 
   const createRequest = async ({ requestData, user }) => {
     const requestNumber = await generateRequestNumber()
@@ -85,12 +82,15 @@ export default function useRequests() {
       ...requestData,
 
       requestNumber,
-
       status: requestData.status,
 
-      solicitanteId: getUserId(user),
-      solicitanteNome: getUserName(user),
-      solicitanteEmail: getUserEmail(user),
+      solicitante: {
+        ...requestData.solicitante,
+
+        id: getUserId(user),
+        nome: getUserName(user),
+        email: getUserEmail(user),
+      },
 
       createdAt: now(),
       updatedAt: now(),
@@ -101,9 +101,9 @@ export default function useRequests() {
     return await api.post(COLLECTION, payload)
   }
 
-  /* =========================================================
-   * 🔄 UPDATE (SAFE)
-   * ======================================================= */
+  /* =========================
+   * UPDATE
+   * ======================= */
 
   const updateRequest = async (id, requestData = {}, user = null) => {
     const ref = doc(db, COLLECTION, id)
@@ -133,19 +133,18 @@ export default function useRequests() {
     await updateDoc(ref, payload)
   }
 
-  /* =========================================================
-   * 🔁 DELETE  (CORE)
-   * ======================================================= */
+  /* =========================
+   * DELETE
+   * ======================= */
 
   const deleteRequest = async (id) => {
     if (!id) throw new Error('ID inválido')
-
     return await api.remove(COLLECTION, id)
   }
 
-  /* =========================================================
-   * 🔁 CHANGE STATUS (CORE)
-   * ======================================================= */
+  /* =========================
+   * CHANGE STATUS
+   * ======================= */
 
   const changeStatus = async ({ request, newStatus, user, observacao = '', extraData = {} }) => {
     const current = await getRequestById(request.id)
@@ -166,168 +165,104 @@ export default function useRequests() {
     )
   }
 
-  /* =========================================================
-   * ✅ ACTIONS
-   * ======================================================= */
+  /* =========================
+   * ACTIONS
+   * ======================= */
 
-  const approveRequest = async ({ request, user, observacao = '' }) =>
+  const approveRequest = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.APPROVED,
-      user,
-      observacao,
-      extraData: {
-        analise: {
-          decisao: REQUEST_STATUS.APPROVED,
-          analyzedAt: now(),
-          analyzedBy: getUserId(user),
-          analyzedByName: getUserName(user),
-          observacao,
-        },
-      },
     })
 
-  const rejectRequest = async ({ request, user, observacao = '' }) =>
+  const rejectRequest = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.REJECTED,
-      user,
-      observacao,
-      extraData: {
-        jaFoiIndeferido: true,
-        analise: {
-          decisao: REQUEST_STATUS.REJECTED,
-          analyzedAt: now(),
-          analyzedBy: getUserId(user),
-          analyzedByName: getUserName(user),
-          observacao,
-        },
-      },
     })
 
-  const waitRequest = async ({ request, user, observacao = '' }) =>
+  const waitRequest = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.WAITING,
-      user,
-      observacao,
     })
 
-  const sendToRevision = async ({ request, user, observacao = '' }) =>
+  const sendToRevision = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.REVISION,
-      user,
-      observacao,
     })
 
-  const sendToAnalysis = async ({ request, user, observacao = '' }) =>
+  const sendToAnalysis = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.PENDING_ANALYSIS,
-      user,
-      observacao,
     })
 
-  /* =========================================================
-   * 🔥 REANÁLISE
-   * ======================================================= */
-
-  const requestReanalysis = async ({ request, user, motivo }) =>
+  const requestReanalysis = ({ request, user, motivo }) =>
     changeStatus({
       request,
       newStatus: REQUEST_STATUS.REANALYSIS,
       user,
-      observacao: 'Solicitada reanálise',
+      observacao: motivo || 'Solicitou reanálise',
       extraData: {
         reanalises: (request.reanalises || 0) + 1,
         reanalysisRequested: true,
-        reanalysisRequestedAt: now(),
-        reanalise: {
-          motivo: motivo || 'Sem descrição',
-          usuarioId: getUserId(user),
-          usuarioNome: getUserName(user),
-          data: now(),
-        },
+
+        reanalise: [
+          ...(request.reanalise || []),
+          {
+            justificativa: motivo || '',
+
+            usuarioId: getUserId(user),
+            usuarioNome: getUserName(user),
+
+            data: now(),
+          },
+        ],
       },
     })
 
-  /* =========================================================
-   * 🚨 REFORÇO (CORRIGIDO)
-   * ======================================================= */
-
-  const reinforceRequest = async ({ request, user }) =>
+  const reinforceRequest = ({ request, user, motivo }) =>
     changeStatus({
       request,
       newStatus: REQUEST_STATUS.WAITING,
       user,
-      observacao: 'Solicitação marcada como URGENTE',
+      observacao: motivo || 'Solicitou reforço',
       extraData: {
-        reforcos: (request.reforcos || 0) + 1, // 🔥 ESSENCIAL
-        reforco: true,
-        reforcoAt: now(),
-        reforcadoPor: getUserId(user),
-        reforcadoPorNome: getUserName(user),
+        reforcos: (request.reforcos || 0) + 1,
+
+        reforco: [
+          ...(request.reforco || []),
+          {
+            justificativa: motivo || '',
+
+            usuarioId: getUserId(user),
+            usuarioNome: getUserName(user),
+
+            data: now(),
+          },
+        ],
       },
     })
 
-  /* =========================================================
-   * 🛒 PEDIDO REALIZADO
-   * ======================================================= */
-
-  const realizedRequest = async ({ request, user }) =>
+  const realizedRequest = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.REALIZED,
-      user,
-      observacao: request.pagamento?.observacao || 'Pedido realizado',
-      extraData: {
-        pagamento: {
-          ...request.pagamento,
-          comprado: true,
-          dataCompra: now(),
-          usuarioId: getUserId(user),
-          usuarioNome: getUserName(user),
-        },
-      },
     })
 
-  /* =========================================================
-   * 📦 ENTREGA
-   * ======================================================= */
-
-  const deliveredRequest = async ({ request, user, observacao = '' }) =>
+  const deliveredRequest = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.DELIVERED,
-      user,
-      observacao: observacao || 'Pedido entregue',
-      extraData: {
-        entrega: {
-          entregue: true,
-          dataEntrega: now(),
-          usuarioId: getUserId(user),
-          usuarioNome: getUserName(user),
-          observacao,
-        },
-      },
     })
 
-  /* =========================================================
-   * 🏁 FINALIZAR
-   * ======================================================= */
-
-  const finishRequest = async ({ request, user, observacao = '' }) =>
+  const finishRequest = (p) =>
     changeStatus({
-      request,
+      ...p,
       newStatus: REQUEST_STATUS.FINISHED,
-      user,
-      observacao: observacao || 'Processo finalizado',
     })
-
-  /* =========================================================
-   * 📄 DUPLICAR
-   * ======================================================= */
 
   const duplicateRequest = async ({ request, user }) => {
     const requestNumber = await generateRequestNumber()
@@ -366,8 +301,6 @@ export default function useRequests() {
 
     return await api.post(COLLECTION, payload)
   }
-
-  /* ========================================================= */
 
   return {
     createRequest,

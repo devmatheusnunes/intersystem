@@ -103,7 +103,7 @@
                 />
 
                 <!-- TEXTO -->
-                <span>{{ props.row.titulo }}</span>
+                <span>{{ props.row.produto?.titulo }}</span>
 
                 <!-- BADGE -->
                 <q-badge
@@ -116,16 +116,16 @@
               </div>
 
               <div class="text-caption text-grey-7">
-                {{ props.row.solicitanteNome }}
+                {{ props.row.solicitante?.nome }}
               </div>
             </q-td>
 
             <q-td key="setorNome" :props="props">
-              {{ props.row.setorNome }}
+              {{ props.row.solicitante?.setorNome }}
             </q-td>
 
             <q-td key="valorTotal" :props="props">
-              {{ formatCurrency(props.row.valorTotal) }}
+              {{ formatCurrency(props.row.financeiro?.valorTotal) }}
             </q-td>
 
             <q-td key="status" :props="props">
@@ -167,7 +167,7 @@
                 dense
                 color="primary"
                 icon="open_in_new"
-                @click="openProduct(props.row.produtoUrl)"
+                @click="openProduct(props.row.produto?.produtoUrl)"
               />
             </q-td>
 
@@ -218,7 +218,13 @@ const search = ref('')
 const columns = [
   { name: 'requestNumber', label: 'Número', field: 'requestNumber', align: 'left', sortable: true },
   { name: 'titulo', label: 'Produto', field: 'titulo', align: 'left', sortable: true },
-  { name: 'setorNome', label: 'Setor', field: 'setorNome', align: 'left', sortable: true },
+  {
+    name: 'setorNome',
+    label: 'Setor',
+    field: 'setorNome',
+    align: 'center',
+    sortable: true,
+  },
   { name: 'valorTotal', label: 'Valor Total', field: 'valorTotal', align: 'left', sortable: true },
   { name: 'status', label: 'Status', field: 'status', align: 'left', sortable: true },
   { name: 'produtoUrl', label: 'Produto', field: 'produtoUrl', align: 'left', sortable: true },
@@ -227,9 +233,17 @@ const columns = [
 
 const filteredRows = computed(() => {
   if (!search.value) return rows.value
-  return rows.value.filter((item) =>
-    item.titulo?.toLowerCase().includes(search.value.toLowerCase()),
-  )
+
+  const termo = search.value.toLowerCase()
+
+  return rows.value.filter((item) => {
+    return (
+      item.requestNumber?.toLowerCase().includes(termo) ||
+      item.produto?.titulo?.toLowerCase().includes(termo) ||
+      item.solicitante?.nome?.toLowerCase().includes(termo) ||
+      item.solicitante?.setorNome?.toLowerCase().includes(termo)
+    )
+  })
 })
 
 /* 🔥 KPI */
@@ -247,7 +261,7 @@ const waitingCount = computed(
 
 /* 🔥 DETECÇÃO REAL DE URGÊNCIA (ALINHADO AO BACKEND) */
 const isUrgent = (row) => {
-  return row.prioridadeAnalise === true
+  return (row.reforco?.length || 0) > 0
 }
 
 /* 🔥 CLASSE */
@@ -282,9 +296,9 @@ const loadRequests = async () => {
       if (!isUrgent(a) && isUrgent(b)) return 1
 
       // 🔥 mais recente primeiro
-      const dateA = parseDate(a.prioridadeData || a.updatedAt || a.createdAt)
-      const dateB = parseDate(b.prioridadeData || b.updatedAt || b.createdAt)
+      const dateA = parseDate(a.solicitacao?.updatedAt || a.solicitacao?.createdAt)
 
+      const dateB = parseDate(b.solicitacao?.updatedAt || b.solicitacao?.createdAt)
       return dateB - dateA
     })
   } finally {

@@ -71,22 +71,22 @@
             <!-- PRODUTO -->
             <q-td key="titulo" :props="props" class="text-left">
               <div class="text-weight-medium">
-                {{ props.row.titulo }}
+                {{ props.row.produto?.titulo }}
               </div>
 
               <div class="text-caption text-grey-7">
-                {{ props.row.solicitanteNome }}
+                {{ props.row.solicitante?.nome }}
               </div>
             </q-td>
 
             <!-- SETOR -->
             <q-td key="setorNome" :props="props">
-              {{ props.row.setorNome }}
+              {{ props.row.solicitante?.setorNome }}
             </q-td>
 
             <!-- VALOR -->
             <q-td key="valorTotal" :props="props">
-              {{ formatCurrency(props.row.valorTotal) }}
+              {{ formatCurrency(props.row.financeiro?.valorTotal) }}
             </q-td>
 
             <!-- STATUS -->
@@ -110,7 +110,7 @@
                 dense
                 color="primary"
                 icon="open_in_new"
-                @click="openProduct(props.row.produtoUrl)"
+                @click="openProduct(props.row.produto?.produtoUrl)"
               />
             </q-td>
 
