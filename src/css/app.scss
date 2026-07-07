@@ -1,0 +1,101 @@
+// app global css
+body {
+  background: #f5f6fa;
+}
+
+.q-page {
+  background: #f5f6fa;
+}
+
+.q-card {
+  border-radius: 12px;
+}
+
+.q-field--outlined .q-field__control {
+  border-radius: 8px;
+}
+
+.q-btn {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.bg-budget {
+  background: var(--q-budget);
+}
+
+.text-budget {
+  color: var(--q-budget);
+}
+
+.bg-revision {
+  background: var(--q-revision);
+}
+
+.text-revision {
+  color: var(--q-revision);
+}
+
+.bg-analysis {
+  background: var(--q-analysis);
+}
+
+.text-analysis {
+  color: var(--q-analysis);
+}
+
+.bg-approved {
+  background: var(--q-approved);
+}
+
+.text-approved {
+  color: var(--q-approved);
+}
+
+.bg-rejected {
+  background: var(--q-rejected);
+}
+
+.text-rejected {
+  color: var(--q-rejected);
+}
+
+.bg-reanalysis {
+  background: var(--q-reanalysis);
+}
+
+.text-reanalysis {
+  color: var(--q-reanalysis);
+}
+
+.bg-waiting {
+  background: var(--q-waiting);
+}
+
+.text-waiting {
+  color: var(--q-waiting);
+}
+
+.bg-realized {
+  background: var(--q-realized);
+}
+
+.text-realized {
+  color: var(--q-realized);
+}
+
+.bg-delivered {
+  background: var(--q-delivered);
+}
+
+.text-delivered {
+  color: var(--q-delivered);
+}
+
+.bg-finished {
+  background: var(--q-finished);
+}
+
+.text-finished {
+  color: var(--q-finished);
+}
