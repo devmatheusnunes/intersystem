@@ -158,7 +158,7 @@ const loading = ref(false)
 const columns = [
   { name: 'nome', label: 'Usuário', field: 'nome', align: 'left' },
   { name: 'setor', label: 'Setor', field: 'setor' },
-  { name: 'role', label: 'Tipo', field: 'role' },
+  { name: 'role', label: 'Perfil', field: 'role' },
   { name: 'permissions', label: 'Permissões', align: 'center' },
   { name: 'status', label: 'Status', align: 'center' },
   { name: 'actions', label: 'Ações', align: 'center' },

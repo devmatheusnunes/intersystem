@@ -1,26 +1,44 @@
 import { computed } from 'vue'
-
 import useAuthUser from './UseAuthUser.js'
 
 export default function usePermissions() {
   const { profile } = useAuthUser()
 
-  const permissions = computed(() => {
-    return profile.value?.permissions || []
-  })
+  /* ==========================================================
+   * DADOS DO USUÁRIO
+   * ========================================================== */
 
-  const visibilityType = computed(() => {
-    return profile.value?.visibilityType || 'own'
-  })
+  const permissions = computed(() => profile.value?.permissions || [])
 
-  const visibleSectors = computed(() => {
-    return profile.value?.visibleSectors || []
-  })
+  const visibilityType = computed(() => profile.value?.visibilityType || 'own')
+
+  const visibleSectors = computed(() => profile.value?.visibleSectors || [])
+
+  /* ==========================================================
+   * HELPERS
+   * ========================================================== */
+
+  const getCurrentUserId = () =>
+    profile.value?.userId || profile.value?.id || profile.value?.uid || ''
+
+  const getCurrentSectorId = () => profile.value?.setorId || profile.value?.setor || ''
+
+  const getItemUserId = (item) =>
+    item?.solicitante?.usuarioId ||
+    item?.solicitante?.userId ||
+    item?.usuarioId ||
+    item?.userId ||
+    item?.createdBy ||
+    ''
+
+  const getItemSectorId = (item) => item?.solicitante?.setorId || item?.setorId || item?.setor || ''
+
+  /* ==========================================================
+   * PERMISSÕES
+   * ========================================================== */
 
   const can = (permission) => {
-    if (!permission) {
-      return false
-    }
+    if (!permission) return false
 
     if (permissions.value.includes('*')) {
       return true
@@ -43,48 +61,45 @@ export default function usePermissions() {
     return false
   }
 
-  const cannot = (permission) => {
-    return !can(permission)
-  }
+  const cannot = (permission) => !can(permission)
 
-  const canAny = (items = []) => {
-    return items.some((item) => can(item))
-  }
+  const canAny = (items = []) => items.some((item) => can(item))
 
-  const canAll = (items = []) => {
-    return items.every((item) => can(item))
-  }
+  const canAll = (items = []) => items.every((item) => can(item))
 
-  // Compatibilidade com código antigo
-  const hasPermission = (permission) => {
-    return can(permission)
-  }
+  /* ==========================================================
+   * COMPATIBILIDADE
+   * ========================================================== */
 
-  const hasAnyPermission = (items = []) => {
-    return canAny(items)
-  }
+  const hasPermission = can
+  const hasAnyPermission = canAny
+  const hasAllPermissions = canAll
 
-  const hasAllPermissions = (items = []) => {
-    return canAll(items)
-  }
+  /* ==========================================================
+   * VISIBILIDADE
+   * ========================================================== */
 
   const canViewItem = (item) => {
-    if (!item) {
-      return false
-    }
+    if (!item) return false
+
+    const currentUserId = getCurrentUserId()
+    const currentSectorId = getCurrentSectorId()
+
+    const itemUserId = getItemUserId(item)
+    const itemSectorId = getItemSectorId(item)
 
     switch (visibilityType.value) {
       case 'all':
         return true
 
       case 'own':
-        return item.userId === profile.value?.id || item.userId === profile.value?.uid
+        return itemUserId === currentUserId
 
       case 'sector':
-        return item.setorId === profile.value?.setorId || item.setor === profile.value?.setor
+        return itemSectorId === currentSectorId
 
       case 'selected_sectors':
-        return visibleSectors.value.includes(item.setorId || item.setor)
+        return visibleSectors.value.includes(itemSectorId)
 
       default:
         return false
@@ -108,5 +123,10 @@ export default function usePermissions() {
     hasAllPermissions,
 
     canViewItem,
+
+    getCurrentUserId,
+    getCurrentSectorId,
+    getItemUserId,
+    getItemSectorId,
   }
 }
