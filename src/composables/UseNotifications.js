@@ -11,19 +11,20 @@ import {
   where,
 } from 'firebase/firestore'
 
-import { db } from 'boot/firebase'
-import useAuthUser from './UseAuthUser'
+import useApi from './UseApi.js'
+import { db } from 'boot/firebase.js'
+import useAuthUser from './UseAuthUser.js'
 
 const COLLECTION = 'notifications'
 
 export default function useNotifications() {
   const { profile } = useAuthUser()
-
+  const api = useApi()
   /* ==========================================================
    * HELPERS
    * ========================================================== */
 
-  const getUserId = (user) => user?.userId || user?.id || user?.uid || ''
+  const getUserId = (user) => user?.id || user?.userId || user?.uid || user?._id || ''
 
   /* ==========================================================
    * CRIAR UMA NOTIFICAÇÃO
@@ -118,6 +119,36 @@ export default function useNotifications() {
   }
 
   /* ==========================================================
+   * USUÁRIOS POR PERMISSÃO
+   * ========================================================== */
+
+  const getUsersByPermission = async (permission) => {
+    if (!permission) return []
+
+    const users = await api.list('users')
+
+    const [module] = permission.split('.')
+
+    return users.filter((user) => {
+      const permissions = user.permissions || []
+
+      if (permissions.includes('*')) {
+        return true
+      }
+
+      if (permissions.includes(permission)) {
+        return true
+      }
+
+      if (permissions.includes(`${module}.*`)) {
+        return true
+      }
+
+      return false
+    })
+  }
+
+  /* ==========================================================
    * MINHAS NOTIFICAÇÕES
    * ========================================================== */
 
@@ -159,17 +190,19 @@ export default function useNotifications() {
 
     if (!userId) return () => {}
 
-    const q = query(
-      collection(db, COLLECTION),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
-    )
+    const q = query(collection(db, COLLECTION), where('userId', '==', userId))
 
     return onSnapshot(q, (snapshot) => {
-      const notifications = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
+      const notifications = snapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .sort((a, b) => {
+          const da = a.createdAt?.toDate?.() || new Date(0)
+          const db = b.createdAt?.toDate?.() || new Date(0)
+          return db - da
+        })
 
       callback(notifications)
     })
@@ -267,6 +300,8 @@ export default function useNotifications() {
 
     createNotification,
     createManyNotifications,
+
+    getUsersByPermission,
 
     getMyNotifications,
     getUnreadCount,

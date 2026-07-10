@@ -5,15 +5,15 @@ import { getAuth } from 'firebase/auth'
 
 import { getFirestore } from 'firebase/firestore'
 
-//FIREBASE CONFIG OFICIAL
+//FIREBASE CONFIG TESTE
 const firebaseConfig = {
-  apiKey: 'AIzaSyACADF6tvr4_ENNF_MGama4WXQFNiw3-GQ',
-  authDomain: 'solicitacoes-compras.firebaseapp.com',
-  projectId: 'solicitacoes-compras',
-  storageBucket: 'solicitacoes-compras.firebasestorage.app',
-  messagingSenderId: '777383924849',
-  appId: '1:777383924849:web:1992b16c819288a888f7d0',
-  measurementId: 'G-S773MFQS6L',
+  apiKey: 'AIzaSyDHR1YlJalcWYWp6q-MgAFOEh3yEbGS9F4',
+  authDomain: 'intersystem-teste.firebaseapp.com',
+  projectId: 'intersystem-teste',
+  storageBucket: 'intersystem-teste.firebasestorage.app',
+  messagingSenderId: '1074393042572',
+  appId: '1:1074393042572:web:16f99b96c4b81fc23675a9',
+  measurementId: 'G-1W7KHJ9NHX',
 }
 
 // APP PRINCIPAL
