@@ -4,12 +4,10 @@ import { db } from 'src/boot/firebase'
 import useApi from 'src/composables/UseApi'
 import { createRequestModel } from 'src/models/requestModel'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
-import useNotifications from 'src/composables/UseNotifications'
 
 export default function useRequests() {
   const api = useApi()
   const COLLECTION = 'requestsbuy'
-  const notifications = useNotifications()
 
   /* =========================
    * HELPERS
@@ -44,166 +42,6 @@ export default function useRequests() {
       observacao,
       createdAt: now(),
     })
-
-  /* =========================
-   * NOTIFICATIONS
-   * ======================= */
-
-  const getRequestOwner = (request) => {
-    return request?.solicitante?.id || request?.solicitanteId || request?.userId || null
-  }
-
-  const getNextPermission = (status) => {
-    switch (status) {
-      case REQUEST_STATUS.REVISION:
-        return 'buy.review'
-
-      case REQUEST_STATUS.PENDING_ANALYSIS:
-      case REQUEST_STATUS.REANALYSIS:
-        return 'buy.analysis'
-
-      case REQUEST_STATUS.WAITING:
-        return 'buy.analysis'
-
-      case REQUEST_STATUS.APPROVED:
-        return 'buy.payment'
-
-      case REQUEST_STATUS.REALIZED:
-        return 'buy.tracking'
-
-      case REQUEST_STATUS.DELIVERED:
-        return 'buy.finish'
-
-      default:
-        return null
-    }
-  }
-
-  const getStatusNotification = (status) => {
-    switch (status) {
-      case REQUEST_STATUS.REVISION:
-        return {
-          title: 'Nova solicitação para revisão',
-          icon: 'fact_check',
-          color: 'primary',
-        }
-
-      case REQUEST_STATUS.PENDING_ANALYSIS:
-        return {
-          title: 'Nova solicitação para análise',
-          icon: 'assignment',
-          color: 'orange',
-        }
-
-      case REQUEST_STATUS.REANALYSIS:
-        return {
-          title: 'Solicitação de reanálise',
-          icon: 'restart_alt',
-          color: 'warning',
-        }
-
-      case REQUEST_STATUS.WAITING:
-        return {
-          title: 'Solicitação em espera',
-          icon: 'pause_circle',
-          color: 'amber',
-        }
-
-      case REQUEST_STATUS.APPROVED:
-        return {
-          title: 'Solicitação aprovada',
-          icon: 'check_circle',
-          color: 'positive',
-        }
-
-      case REQUEST_STATUS.REJECTED:
-        return {
-          title: 'Solicitação indeferida',
-          icon: 'cancel',
-          color: 'negative',
-        }
-
-      case REQUEST_STATUS.REALIZED:
-        return {
-          title: 'Compra realizada',
-          icon: 'shopping_cart',
-          color: 'secondary',
-        }
-
-      case REQUEST_STATUS.DELIVERED:
-        return {
-          title: 'Produto entregue',
-          icon: 'local_shipping',
-          color: 'info',
-        }
-
-      case REQUEST_STATUS.FINISHED:
-        return {
-          title: 'Solicitação finalizada',
-          icon: 'task_alt',
-          color: 'positive',
-        }
-
-      default:
-        return {
-          title: 'Solicitação atualizada',
-          icon: 'notifications',
-          color: 'primary',
-        }
-    }
-  }
-
-  const sendStatusNotifications = async ({ request, status }) => {
-    const owner = getRequestOwner(request)
-
-    const permission = getNextPermission(status)
-
-    const users = []
-
-    if (owner) {
-      users.push(owner)
-    }
-
-    if (permission) {
-      const permissionUsers = await notifications.getUsersByPermission(permission)
-
-      permissionUsers.forEach((user) => {
-        const id = typeof user === 'string' ? user : getUserId(user)
-
-        if (id && !users.includes(id)) {
-          users.push(id)
-        }
-      })
-    }
-
-    const info = getStatusNotification(status)
-
-    await notifications.notify({
-      users,
-
-      title: info.title,
-
-      message: `Solicitação ${request.requestNumber} foi atualizada para "${status}".`,
-
-      module: 'Solicitações',
-
-      type: status,
-
-      requestId: request.id,
-
-      requestNumber: request.requestNumber,
-
-      route: `/app/buy/details/${request.id}`,
-
-      icon: info.icon,
-
-      color: info.color,
-
-      metadata: {
-        status,
-      },
-    })
-  }
 
   /* =========================
    * REQUEST NUMBER
@@ -316,7 +154,7 @@ export default function useRequests() {
       createHistoryEntry(newStatus, user, observacao),
     ]
 
-    await updateRequest(
+    return await updateRequest(
       request.id,
       {
         ...extraData,
@@ -325,12 +163,6 @@ export default function useRequests() {
       },
       user,
     )
-    await sendStatusNotifications({
-      request,
-      status: newStatus,
-    })
-
-    return true
   }
 
   /* =========================

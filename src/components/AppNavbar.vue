@@ -5,16 +5,13 @@
 
       <q-toolbar-title>
         <img alt="Inter System" src="~assets/intersystem_horizontal_white.svg" class="logo" />
+      </q-toolbar-title>
+
+      <q-btn flat class="user-button no-padding">
         <span class="app-version">
           {{ appVersion }}
         </span>
-      </q-toolbar-title>
 
-      <!-- Sino -->
-      <NotificationBell class="q-mr-sm" />
-
-      <!-- Usuário -->
-      <q-btn flat class="user-button no-padding">
         <q-icon name="account_circle" size="30px" class="q-ml-sm" />
 
         <q-menu>
@@ -69,10 +66,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import useAuthUser from 'src/composables/UseAuthUser.js'
-import useSystemLog from 'src/composables/UseSystemLog.js'
-
-import NotificationBell from 'src/components/NotificationBell.vue'
+import useAuthUser from 'src/composables/UseAuthUser'
+import useSystemLog from 'src/composables/UseSystemLog'
 
 const router = useRouter()
 
