@@ -615,18 +615,17 @@ const loadRequests = async () => {
   try {
     const all = await getRequests()
 
-    rows.value = all
-      .filter((item) => canViewItem(item))
-      .filter((item) =>
-        [
-          REQUEST_STATUS.APPROVED,
-          REQUEST_STATUS.REJECTED,
-          REQUEST_STATUS.WAITING,
-          REQUEST_STATUS.REALIZED,
-          REQUEST_STATUS.DELIVERED,
-          REQUEST_STATUS.FINISHED,
-        ].includes(item.status),
-      )
+    const visible = all.filter((item) => canViewItem(item))
+    rows.value = visible.filter((item) =>
+      [
+        REQUEST_STATUS.APPROVED,
+        REQUEST_STATUS.REJECTED,
+        REQUEST_STATUS.WAITING,
+        REQUEST_STATUS.REALIZED,
+        REQUEST_STATUS.DELIVERED,
+        REQUEST_STATUS.FINISHED,
+      ].includes(item.status),
+    )
   } catch (err) {
     console.error(err)
     notifyError('Erro ao carregar histórico')

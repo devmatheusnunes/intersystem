@@ -47,13 +47,12 @@ export function createRequestModel() {
 
     solicitacao: {
       justificativa: '',
-
-      createdAt: null,
-      updatedAt: null,
-
       usuarioId: '',
       usuarioNome: '',
     },
+
+    createdAt: null,
+    updatedAt: null,
 
     /* =========================================================
      * ORÇAMENTO

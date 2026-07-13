@@ -1,44 +1,26 @@
 import { computed } from 'vue'
+
 import useAuthUser from './UseAuthUser.js'
 
 export default function usePermissions() {
   const { profile } = useAuthUser()
 
-  /* ==========================================================
-   * DADOS DO USUÁRIO
-   * ========================================================== */
+  const permissions = computed(() => {
+    return profile.value?.permissions || []
+  })
 
-  const permissions = computed(() => profile.value?.permissions || [])
+  const visibilityType = computed(() => {
+    return profile.value?.visibilityType || 'own'
+  })
 
-  const visibilityType = computed(() => profile.value?.visibilityType || 'own')
-
-  const visibleSectors = computed(() => profile.value?.visibleSectors || [])
-
-  /* ==========================================================
-   * HELPERS
-   * ========================================================== */
-
-  const getCurrentUserId = () =>
-    profile.value?.userId || profile.value?.id || profile.value?.uid || ''
-
-  const getCurrentSectorId = () => profile.value?.setorId || profile.value?.setor || ''
-
-  const getItemUserId = (item) =>
-    item?.solicitante?.usuarioId ||
-    item?.solicitante?.userId ||
-    item?.usuarioId ||
-    item?.userId ||
-    item?.createdBy ||
-    ''
-
-  const getItemSectorId = (item) => item?.solicitante?.setorId || item?.setorId || item?.setor || ''
-
-  /* ==========================================================
-   * PERMISSÕES
-   * ========================================================== */
+  const visibleSectors = computed(() => {
+    return profile.value?.visibleSectors || []
+  })
 
   const can = (permission) => {
-    if (!permission) return false
+    if (!permission) {
+      return false
+    }
 
     if (permissions.value.includes('*')) {
       return true
@@ -61,45 +43,88 @@ export default function usePermissions() {
     return false
   }
 
-  const cannot = (permission) => !can(permission)
+  const cannot = (permission) => {
+    return !can(permission)
+  }
 
-  const canAny = (items = []) => items.some((item) => can(item))
+  const canAny = (items = []) => {
+    return items.some((item) => can(item))
+  }
 
-  const canAll = (items = []) => items.every((item) => can(item))
+  const canAll = (items = []) => {
+    return items.every((item) => can(item))
+  }
 
-  /* ==========================================================
-   * COMPATIBILIDADE
-   * ========================================================== */
+  // Compatibilidade com código antigo
+  const hasPermission = (permission) => {
+    return can(permission)
+  }
 
-  const hasPermission = can
-  const hasAnyPermission = canAny
-  const hasAllPermissions = canAll
+  const hasAnyPermission = (items = []) => {
+    return canAny(items)
+  }
 
-  /* ==========================================================
-   * VISIBILIDADE
-   * ========================================================== */
+  const hasAllPermissions = (items = []) => {
+    return canAll(items)
+  }
 
   const canViewItem = (item) => {
-    if (!item) return false
+    if (!item || !profile.value) {
+      return false
+    }
 
-    const currentUserId = getCurrentUserId()
-    const currentSectorId = getCurrentSectorId()
+    const requestUserId = item.solicitante?.id
+    const requestSectorId = item.solicitante?.setorId
+    const requestSectorName = item.solicitante?.setorNome
 
-    const itemUserId = getItemUserId(item)
-    const itemSectorId = getItemSectorId(item)
+    const profileUserId = profile.value.id || profile.value.userId || profile.value.uid
+
+    const profileSectorId = profile.value.setorId
+
+    const profileSectorName = profile.value.setorNome || profile.value.setor
+
+    console.log('VISIBILITY CHECK', {
+      type: visibilityType.value,
+
+      request: {
+        userId: requestUserId,
+        sectorId: requestSectorId,
+        sectorName: requestSectorName,
+      },
+
+      profile: {
+        userId: profileUserId,
+        sectorId: profileSectorId,
+        sectorName: profileSectorName,
+      },
+    })
 
     switch (visibilityType.value) {
       case 'all':
         return true
 
       case 'own':
-        return itemUserId === currentUserId
+        return requestUserId === profileUserId
 
       case 'sector':
-        return itemSectorId === currentSectorId
+        return requestSectorId && profileSectorId && requestSectorId === profileSectorId
 
       case 'selected_sectors':
-        return visibleSectors.value.includes(itemSectorId)
+        return visibleSectors.value.some((sector) => {
+          if (!sector) {
+            return false
+          }
+
+          if (typeof sector === 'string') {
+            return sector === requestSectorId || sector === requestSectorName
+          }
+
+          return (
+            sector.id === requestSectorId ||
+            sector.value === requestSectorId ||
+            sector.nome === requestSectorName
+          )
+        })
 
       default:
         return false
@@ -123,10 +148,5 @@ export default function usePermissions() {
     hasAllPermissions,
 
     canViewItem,
-
-    getCurrentUserId,
-    getCurrentSectorId,
-    getItemUserId,
-    getItemSectorId,
   }
 }

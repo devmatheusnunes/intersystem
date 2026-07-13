@@ -5,13 +5,12 @@
 
       <q-toolbar-title>
         <img alt="Inter System" src="~assets/intersystem_horizontal_white.svg" class="logo" />
-      </q-toolbar-title>
-
-      <q-btn flat class="user-button no-padding">
         <span class="app-version">
           {{ appVersion }}
         </span>
+      </q-toolbar-title>
 
+      <q-btn flat class="user-button no-padding">
         <q-icon name="account_circle" size="30px" class="q-ml-sm" />
 
         <q-menu>
@@ -84,7 +83,7 @@ const { addLog } = useSystemLog()
 |--------------------------------------------------------------------------
 */
 
-const appVersion = 'v2.6'
+const appVersion = 'v2.9'
 
 const goToProfile = () => {
   router.push('/app/profile')
