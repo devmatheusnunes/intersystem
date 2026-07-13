@@ -1,128 +1,94 @@
 import { getNotificationEvent } from 'src/constants/notificationEvents'
 
 /**
- * Resolver usuários que devem receber notificações
+ * Resolve os usuários que devem receber uma notificação.
  *
- * Entrada:
- *
- * {
- *   event:"REQUEST_ANALYSIS",
- *   request:{...},
- *   users:[]
- * }
- *
- *
- * Retorno:
- *
+ * users:
  * [
- *   usuários elegíveis
+ *   {
+ *     roleId,
+ *     setorId,
+ *     userId,
+ *     ...
+ *   }
  * ]
  *
+ * roles:
+ * {
+ *   roleId: {
+ *     permissions: [],
+ *     visibilityType,
+ *     visibleSectors
+ *   }
+ * }
  */
-
-export function resolveNotificationUsers({
-  event,
-
-  request,
-
-  users = [],
-}) {
+export function resolveNotificationUsers({ event, request, users = [], roles = {} }) {
   const notificationEvent = getNotificationEvent(event)
 
   if (!notificationEvent) {
-    console.warn('Evento de notificação inexistente:', event)
-
+    console.warn(`Evento de notificação "${event}" não encontrado.`)
     return []
   }
 
   return users.filter((user) => {
-    /**
-     * Valida permissão principal
-     */
-    if (!hasPermission(user, notificationEvent.permission)) {
+    const role = roles[user.roleId]
+
+    if (!role || !role.ativo) {
       return false
     }
 
-    /**
-     * Eventos especiais
-     * precisam de permissão adicional
-     */
-    if (
-      notificationEvent.extraPermission &&
-      !hasPermission(user, notificationEvent.extraPermission)
-    ) {
+    if (!hasPermissions(role, notificationEvent.permissions)) {
       return false
     }
 
-    /**
-     * Validação da visibilidade
-     */
-    return canReceiveByVisibility(
+    return canReceiveByVisibility({
       user,
-
+      role,
       request,
-    )
+    })
   })
 }
 
 /**
- * Verifica se usuário possui permissão
+ * Verifica se a Role possui todas as permissões
+ * exigidas pelo evento.
  */
-function hasPermission(
-  user,
-
-  permission,
-) {
-  if (!permission) {
+function hasPermissions(role, requiredPermissions = []) {
+  if (!requiredPermissions.length) {
     return true
   }
 
-  return user.permissions?.includes(permission)
+  const rolePermissions = role.permissions || []
+
+  return requiredPermissions.every((permission) => rolePermissions.includes(permission))
 }
 
 /**
- * Validação de visibilidade
- *
- * Tipos:
- *
- * own
- * sector
- * specific
- * all
- *
+ * Verifica se o usuário pode receber
+ * notificações conforme a visibilidade da Role.
  */
-export function canReceiveByVisibility(
-  user,
-
-  request,
-) {
-  const visibility = user.visibility
-
-  if (!visibility) {
-    return false
-  }
-
-  switch (visibility.type) {
+export function canReceiveByVisibility({ user, role, request }) {
+  switch (role.visibilityType) {
     /**
-     * Somente meus registros
+     * Apenas solicitações do próprio usuário.
      */
     case 'own':
-      return request.userId === user.id
+      return request.solicitante.id === user.id
 
     /**
-     * Meu setor
+     * Solicitações do mesmo setor.
      */
     case 'sector':
-      return request.setor === user.setor
+      return request.solicitante.setorId === user.setorId
 
     /**
-     * Setores específicos
+     * Apenas setores selecionados.
      */
-    case 'specific':
-      return visibility.sectors?.includes(request.setor)
+    case 'selected_sectors':
+      return (role.visibleSectors || []).includes(request.solicitante.setorId)
 
     /**
-     * Visualizar tudo
+     * Todas as solicitações.
      */
     case 'all':
       return true

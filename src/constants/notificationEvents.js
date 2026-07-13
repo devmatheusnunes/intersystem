@@ -1,99 +1,148 @@
 /**
  * Eventos de notificações do sistema
  *
- * Cada evento representa uma mudança
- * importante no fluxo da solicitação.
+ * Centraliza todas as notificações possíveis do ERP.
+ * Cada evento informa:
+ * - permissões necessárias
+ * - prioridade
+ * - canais suportados
+ * - título
+ * - mensagem dinâmica
  */
 
 export const NOTIFICATION_EVENTS = {
   REQUEST_CREATED: {
     key: 'REQUEST_CREATED',
 
-    permission: 'requests.menu',
+    permissions: ['requests.menu'],
+
+    priority: 'normal',
+
+    channels: ['system'],
 
     title: 'Nova solicitação criada',
 
-    message: 'Uma nova solicitação foi criada e aguarda atendimento.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} foi criada.`
+    },
   },
 
   REQUEST_BUDGET: {
     key: 'REQUEST_BUDGET',
 
-    permission: 'budget.menu',
+    permissions: ['budget.menu'],
+
+    priority: 'normal',
+
+    channels: ['system'],
 
     title: 'Solicitação para orçamento',
 
-    message: 'Existe uma solicitação aguardando orçamento.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} aguarda orçamento.`
+    },
   },
 
   REQUEST_REVISION: {
     key: 'REQUEST_REVISION',
 
-    permission: 'revision.menu',
+    permissions: ['revision.menu'],
+
+    priority: 'normal',
+
+    channels: ['system'],
 
     title: 'Solicitação para revisão',
 
-    message: 'Existe uma solicitação aguardando revisão.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} aguarda revisão.`
+    },
   },
 
   REQUEST_ANALYSIS: {
     key: 'REQUEST_ANALYSIS',
 
-    permission: 'analysis.menu',
+    permissions: ['analysis.menu'],
+
+    priority: 'normal',
+
+    channels: ['system'],
 
     title: 'Solicitação para análise',
 
-    message: 'Existe uma solicitação aguardando análise.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} aguarda análise.`
+    },
   },
 
   REQUEST_PAYMENT: {
     key: 'REQUEST_PAYMENT',
 
-    permission: 'payment.menu',
+    permissions: ['payment.menu'],
+
+    priority: 'normal',
+
+    channels: ['system'],
 
     title: 'Solicitação para pagamento',
 
-    message: 'Existe uma solicitação aguardando pagamento.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} aguarda pagamento.`
+    },
   },
 
   REQUEST_TRACKING: {
     key: 'REQUEST_TRACKING',
 
-    permission: 'tracking.menu',
+    permissions: ['tracking.menu'],
+
+    priority: 'normal',
+
+    channels: ['system'],
 
     title: 'Solicitação para rastreio',
 
-    message: 'Existe uma solicitação aguardando acompanhamento de entrega.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} está em acompanhamento de entrega.`
+    },
   },
 
   REQUEST_REANALYSIS: {
     key: 'REQUEST_REANALYSIS',
 
-    permission: 'analysis.menu',
+    permissions: ['analysis.menu', 'history.reanalyze'],
 
-    extraPermission: 'history.reanalyze',
+    priority: 'high',
+
+    channels: ['system'],
 
     title: 'Solicitação de reanálise',
 
-    message: 'Uma solicitação foi enviada para reanálise.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} foi enviada para reanálise.`
+    },
   },
 
   REQUEST_REINFORCEMENT: {
     key: 'REQUEST_REINFORCEMENT',
 
-    permission: 'analysis.menu',
+    permissions: ['analysis.menu', 'history.reinforcement'],
 
-    extraPermission: 'history.reinforcement',
+    priority: 'urgent',
+
+    channels: ['system'],
 
     title: 'Solicitação urgente de análise',
 
-    message: 'Uma solicitação recebeu reforço de prioridade.',
+    buildMessage(request) {
+      return `A solicitação ${request.requestNumber} recebeu prioridade de análise.`
+    },
   },
 }
 
 /**
- * Busca evento pelo código
+ * Retorna um evento de notificação.
  */
 export function getNotificationEvent(event) {
-  return Object.values(NOTIFICATION_EVENTS).find((item) => item.key === event)
+  return NOTIFICATION_EVENTS[event] || null
 }
