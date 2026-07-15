@@ -13,13 +13,21 @@ import {
 
 import { db } from 'boot/firebase'
 
+import useApi from 'src/composables/UseApi'
+
 import { createNotification } from 'src/models/notificationModel'
 
+import { getNotificationEvent } from 'src/constants/notificationEvents'
+
+import { resolveNotificationUsers } from 'src/utils/notificationResolver'
+
 export default function UseNotifications() {
+  const api = useApi()
+
   const collectionName = 'notifications'
 
   /**
-   * Criar notificação
+   * Criar notificação individual
    */
   const create = async (data) => {
     const notification = createNotification({
@@ -44,116 +52,301 @@ export default function UseNotifications() {
   }
 
   /**
-   * Buscar notificações do usuário
+   * Disparar notificação para um usuário
+   *
+   * Atualmente:
+   * - Sistema
+   *
+   * Futuro:
+   * - WhatsApp
+   * - Email
+   * - Push
    */
-  const getUserNotifications = async (userId, maxItems = 20) => {
-    const q = query(
-      collection(db, collectionName),
+  const dispatch = async ({ user, request, notificationEvent }) => {
+    const message = notificationEvent.buildMessage
+      ? notificationEvent.buildMessage(request)
+      : notificationEvent.message
 
-      where('userId', '==', userId),
+    await create({
+      userId: user.id,
 
-      orderBy('createdAt', 'desc'),
+      type: notificationEvent.key,
 
-      limit(maxItems),
-    )
+      title: notificationEvent.title,
 
-    const snapshot = await getDocs(q)
+      message,
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
+      requestId: request.id || null,
 
-      ...doc.data(),
-    }))
-  }
+      requestNumber: request.requestNumber || null,
 
-  /**
-   * Buscar quantidade de notificações não lidas
-   */
-  const getUnreadCount = async (userId) => {
-    const q = query(
-      collection(db, collectionName),
+      sectorId: request?.solicitante?.setorId || null,
 
-      where('userId', '==', userId),
-
-      where('read', '==', false),
-    )
-
-    const snapshot = await getDocs(q)
-
-    return snapshot.size
-  }
-
-  /**
-   * Marcar notificação como lida
-   */
-  const markAsRead = async (notificationId) => {
-    const ref = doc(
-      db,
-
-      collectionName,
-
-      notificationId,
-    )
-
-    await updateDoc(
-      ref,
-
-      {
-        read: true,
-
-        readAt: serverTimestamp(),
+      channels: {
+        system: true,
+        whatsapp: false,
+        email: false,
       },
-    )
+
+      metadata: {
+        event: notificationEvent.key,
+
+        requestStatus: request.status || null,
+
+        requestTitle: request?.produto?.titulo || null,
+      },
+    })
+
+    /**
+     * Futuro:
+     *
+     * if(notificationEvent.channels.includes('whatsapp'))
+     * {
+     *   await WhatsAppService.send(...)
+     * }
+     */
   }
 
   /**
-   * Marcar todas notificações como lidas
+   * Disparar evento de notificação
+   *
+   * Exemplo:
+   *
+   * await sendEvent({
+   *   event:'REQUEST_ANALYSIS',
+   *   request
+   * })
    */
-  const markAllAsRead = async (userId) => {
-    const notifications = await getUserNotifications(userId, 100)
+  const sendEvent = async ({ event, request }) => {
+    try {
+      const notificationEvent = getNotificationEvent(event)
 
-    const updates = notifications
+      if (!notificationEvent) {
+        console.warn(`Evento de notificação não encontrado: ${event}`)
 
-      .filter((item) => !item.read)
+        return []
+      }
 
-      .map((item) =>
-        updateDoc(
-          doc(db, collectionName, item.id),
+      /**
+       * Usuários ativos
+       */
+      const users = await api.find('users', 'ativo', true)
 
-          {
-            read: true,
+      /**
+       * Roles
+       */
+      const rolesList = await api.list('roles')
 
-            readAt: serverTimestamp(),
-          },
+      /**
+       * Transforma em Map
+       *
+       * {
+       *   roleId : role
+       * }
+       */
+      const roles = rolesList.reduce((acc, role) => {
+        acc[role.id] = role
+
+        return acc
+      }, {})
+
+      /**
+       * Resolve destinatários
+       */
+      const recipients = resolveNotificationUsers({
+        event,
+
+        request,
+
+        users,
+
+        roles,
+      })
+
+      if (!recipients.length) {
+        return []
+      }
+
+      /**
+       * Dispara notificações
+       */
+      await Promise.all(
+        recipients.map((user) =>
+          dispatch({
+            user,
+
+            request,
+
+            notificationEvent,
+          }),
         ),
       )
 
-    await Promise.all(updates)
+      return recipients
+    } catch (error) {
+      console.error('Erro ao enviar notificações:', error)
+
+      throw error
+    }
+  }
+  /**
+   * Buscar notificações do usuário
+   *
+   * Retorna somente notificações
+   * pertencentes ao usuário logado
+   */
+  const getUserNotifications = async (userId, max = 50) => {
+    try {
+      const q = query(
+        collection(db, collectionName),
+
+        where('userId', '==', userId),
+
+        orderBy('createdAt', 'desc'),
+
+        limit(max),
+      )
+
+      const snapshot = await getDocs(q)
+
+      return snapshot.docs.map((item) => ({
+        id: item.id,
+
+        ...item.data(),
+      }))
+    } catch (error) {
+      console.error('Erro ao buscar notificações:', error)
+
+      return []
+    }
   }
 
   /**
-   * Remover notificação
-   * (mantido para uso futuro)
+   * Buscar apenas notificações não lidas
+   */
+  const getUnreadNotifications = async (userId) => {
+    try {
+      const q = query(
+        collection(db, collectionName),
 
-  const remove = async(notificationId)=>{
+        where('userId', '==', userId),
 
+        where('read', '==', false),
 
-    // reservado para futura implementação
+        orderBy('createdAt', 'desc'),
+      )
 
+      const snapshot = await getDocs(q)
+
+      return snapshot.docs.map((item) => ({
+        id: item.id,
+
+        ...item.data(),
+      }))
+    } catch (error) {
+      console.error('Erro ao buscar notificações não lidas:', error)
+
+      return []
+    }
   }
- */
+
+  /**
+   * Contador de notificações não lidas
+   */
+  const countUnread = async (userId) => {
+    const notifications = await getUnreadNotifications(userId)
+
+    return notifications.length
+  }
+
+  /**
+   * Marcar uma notificação como lida
+   */
+  const markAsRead = async (notificationId) => {
+    try {
+      const ref = doc(db, collectionName, notificationId)
+
+      await updateDoc(ref, {
+        read: true,
+
+        readAt: serverTimestamp(),
+      })
+
+      return true
+    } catch (error) {
+      console.error('Erro ao marcar notificação como lida:', error)
+
+      return false
+    }
+  }
+
+  /**
+   * Marcar todas as notificações
+   * do usuário como lidas
+   */
+  const markAllAsRead = async (userId) => {
+    try {
+      const notifications = await getUnreadNotifications(userId)
+
+      if (!notifications.length) {
+        return true
+      }
+
+      await Promise.all(
+        notifications.map((notification) => {
+          const ref = doc(db, collectionName, notification.id)
+
+          return updateDoc(ref, {
+            read: true,
+
+            readAt: serverTimestamp(),
+          })
+        }),
+      )
+
+      return true
+    } catch (error) {
+      console.error('Erro ao marcar todas notificações:', error)
+
+      return false
+    }
+  }
+
+  /**
+   * Retorna notificações recentes
+   */
+  const getLatest = async (userId, max = 5) => {
+    const notifications = await getUserNotifications(userId, max)
+
+    return notifications
+  }
 
   return {
+    /**
+     * Criação
+     */
     create,
 
+    dispatch,
+
+    sendEvent,
+
+    /**
+     * Consulta
+     */
     getUserNotifications,
 
-    getUnreadCount,
+    getUnreadNotifications,
 
+    getLatest,
+
+    countUnread,
+
+    /**
+     * Controle leitura
+     */
     markAsRead,
 
     markAllAsRead,
-
-    //remove
   }
 }
