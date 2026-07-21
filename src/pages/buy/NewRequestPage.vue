@@ -159,6 +159,7 @@ import useAuthUser from 'src/composables/UseAuthUser'
 import useNotify from 'src/composables/UseNotify'
 import useRequests from 'src/composables/UseRequests'
 import useSystemLog from 'src/composables/UseSystemLog'
+import UseNotifications from 'src/composables/UseNotifications'
 
 import { createRequestModel } from 'src/models/requestModel'
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
@@ -173,6 +174,7 @@ const { profile } = useAuthUser()
 const { notifySuccess, notifyError } = useNotify()
 const { createRequest, updateRequest, getRequestById, generateRequestNumber } = useRequests()
 const { addLog } = useSystemLog()
+const notifications = UseNotifications()
 
 /* =========================
  * CATEGORIAS
@@ -361,16 +363,20 @@ const save = async () => {
 
       notifySuccess('Solicitação atualizada com sucesso')
     } else {
-      await createRequest({
+      const request = await createRequest({
         requestData: payload,
         user: profile.value,
       })
-
       await addLog({
         module: 'Solicitações',
         action: 'CREATE',
         description: `Criou ${payload.requestNumber}`,
         after: payload,
+      })
+
+      await notifications.sendEvent({
+        event: 'REQUEST_CREATED',
+        request,
       })
 
       notifySuccess('Solicitação criada com sucesso')

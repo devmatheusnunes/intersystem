@@ -98,7 +98,12 @@ export default function useRequests() {
       historico: [createHistoryEntry(requestData.status, user, 'Solicitação criada')],
     })
 
-    return await api.post(COLLECTION, payload)
+    const id = await api.post(COLLECTION, payload)
+
+    return {
+      id,
+      ...payload,
+    }
   }
 
   /* =========================
