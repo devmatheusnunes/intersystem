@@ -157,6 +157,7 @@ import { useRoute, useRouter } from 'vue-router'
 import useRequests from 'src/composables/UseRequests'
 import useAuthUser from 'src/composables/UseAuthUser'
 import useSystemLog from 'src/composables/UseSystemLog'
+import UseNotifications from 'src/composables/UseNotifications'
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
@@ -166,6 +167,7 @@ const router = useRouter()
 const { getRequestById, changeStatus } = useRequests()
 const { user } = useAuthUser()
 const { addLog } = useSystemLog()
+const notifications = UseNotifications()
 
 const loading = ref(true)
 const request = ref(null)
@@ -293,6 +295,25 @@ const save = async () => {
       documentId: request.value.id,
       before,
       after,
+    })
+
+    after.id = request.value.id
+    after.requestNumber = request.value.requestNumber
+
+    await notifications.sendEvent({
+      event: isBudget.value ? 'REQUEST_REVISION' : 'REQUEST_ANALYSIS',
+
+      request: after,
+
+      actor: user.value,
+    })
+
+    await notifications.sendEvent({
+      event: isBudget.value ? 'REQUEST_BUDGETED' : 'REQUEST_REVIEWED',
+
+      request: after,
+
+      actor: user.value,
     })
 
     router.push(returnRoute.value)

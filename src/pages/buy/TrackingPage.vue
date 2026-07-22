@@ -198,20 +198,20 @@ import useNotify from 'src/composables/UseNotify'
 import useRequests from 'src/composables/UseRequests'
 import useSystemLog from 'src/composables/UseSystemLog'
 import useAuthUser from 'src/composables/UseAuthUser'
-import { REQUEST_STATUS } from 'src/constants/requestStatus'
 import usePermissions from 'src/composables/UsePermissions'
+import UseNotifications from 'src/composables/UseNotifications'
+
+import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
 const router = useRouter()
 
 const { notifySuccess, notifyError } = useNotify()
-
 const { profile } = useAuthUser()
-
 const { hasPermission } = usePermissions()
-
 const { getRequestsByStatuses, deliveredRequest, finishRequest } = useRequests()
-
 const { addLog } = useSystemLog()
+
+const notifications = UseNotifications()
 
 const loading = ref(false)
 
@@ -338,6 +338,9 @@ const confirmDelivery = (row) => {
 
       after.status = REQUEST_STATUS.DELIVERED
 
+      after.id = row.id
+      after.requestNumber = row.requestNumber
+
       await addLog({
         module: 'Entrega',
         action: 'DELIVER',
@@ -345,6 +348,14 @@ const confirmDelivery = (row) => {
         documentId: row.id,
         before,
         after,
+      })
+
+      await notifications.sendEvent({
+        event: 'REQUEST_DELIVERED',
+
+        request: after,
+
+        actor: profile.value,
       })
 
       notifySuccess('Pedido marcado como entregue')
@@ -391,6 +402,9 @@ const confirmFinish = (row) => {
 
       after.status = REQUEST_STATUS.FINISHED
 
+      after.id = row.id
+      after.requestNumber = row.requestNumber
+
       await addLog({
         module: 'Entrega',
         action: 'FINISH',
@@ -398,6 +412,14 @@ const confirmFinish = (row) => {
         documentId: row.id,
         before,
         after,
+      })
+
+      await notifications.sendEvent({
+        event: 'REQUEST_FINISHED',
+
+        request: after,
+
+        actor: profile.value,
       })
 
       notifySuccess('Processo finalizado')

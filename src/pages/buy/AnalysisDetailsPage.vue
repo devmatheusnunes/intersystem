@@ -319,6 +319,7 @@ import { useRoute, useRouter } from 'vue-router'
 import useRequests from 'src/composables/UseRequests'
 import useAuthUser from 'src/composables/UseAuthUser'
 import useSystemLog from 'src/composables/UseSystemLog'
+import UseNotifications from 'src/composables/UseNotifications'
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
@@ -326,6 +327,7 @@ const route = useRoute()
 const router = useRouter()
 
 const { addLog } = useSystemLog()
+const notifications = UseNotifications()
 
 const { getRequestById, approveRequest, rejectRequest, waitRequest } = useRequests()
 
@@ -576,6 +578,21 @@ const handleApprove = async () => {
       after,
     })
 
+    after.id = request.value.id
+    after.requestNumber = request.value.requestNumber
+
+    await notifications.sendEvent({
+      event: 'REQUEST_PAYMENT',
+      request: after,
+      actor: profile.value,
+    })
+
+    await notifications.sendEvent({
+      event: 'REQUEST_APPROVED',
+      request: after,
+      actor: profile.value,
+    })
+
     router.push('/app/buy/analysis')
   } catch (err) {
     console.error(err)
@@ -629,6 +646,15 @@ const handleReject = async () => {
       after,
     })
 
+    after.id = request.value.id
+    after.requestNumber = request.value.requestNumber
+
+    await notifications.sendEvent({
+      event: 'REQUEST_REJECTED',
+      request: after,
+      actor: profile.value,
+    })
+
     router.push('/app/buy/analysis')
   } catch (err) {
     console.error(err)
@@ -680,6 +706,15 @@ const handleWait = async () => {
       documentId: request.value.id,
       before,
       after,
+    })
+
+    after.id = request.value.id
+    after.requestNumber = request.value.requestNumber
+
+    await notifications.sendEvent({
+      event: 'REQUEST_WAITING',
+      request: after,
+      actor: profile.value,
     })
 
     router.push('/app/buy/analysis')
