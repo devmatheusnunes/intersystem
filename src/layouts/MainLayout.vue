@@ -1,8 +1,8 @@
 <template>
-  <q-layout view="hHh Lpr lFf">
-    <AppNavbar @toggle-menu="drawer = !drawer" />
+  <q-layout view="lHh Lpr lFf">
+    <AppNavbar :mini-state="miniState" @toggle-mini="miniState = !miniState" />
 
-    <AppSidebar v-model="drawer" />
+    <AppSidebar v-model="leftDrawerOpen" :mini-state="miniState" />
 
     <q-page-container>
       <router-view />
@@ -16,5 +16,6 @@ import { ref } from 'vue'
 import AppNavbar from 'src/components/AppNavbar.vue'
 import AppSidebar from 'src/components/AppSidebar.vue'
 
-const drawer = ref(true)
+const leftDrawerOpen = ref(true)
+const miniState = ref(false)
 </script>

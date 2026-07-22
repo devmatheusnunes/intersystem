@@ -72,6 +72,8 @@ export default function UseNotifications() {
 
       type: notificationEvent.key,
 
+      priority: notificationEvent.priority,
+
       title: notificationEvent.title,
 
       message,
@@ -117,7 +119,19 @@ export default function UseNotifications() {
    *   request
    * })
    */
-  const sendEvent = async ({ event, request }) => {
+
+  /**
+   * Disparar evento de notificação
+   *
+   * Exemplo:
+   *
+   * await sendEvent({
+   *   event: 'REQUEST_ANALYSIS',
+   *   request,
+   *   actor: profile.value,
+   * })
+   */
+  const sendEvent = async ({ event, request, actor = null }) => {
     try {
       const notificationEvent = getNotificationEvent(event)
 
@@ -126,6 +140,54 @@ export default function UseNotifications() {
 
         return []
       }
+
+      /**
+       * Usuário que executou a ação
+       */
+      const actorId = actor?.id || actor?.userId || actor?.uid || null
+
+      /**
+       * =====================================================
+       * NOTIFICAÇÃO DE ACOMPANHAMENTO
+       *
+       * Envia somente ao solicitante da solicitação.
+       * Não utiliza roles, permissões ou visibilidade.
+       * =====================================================
+       */
+      if (notificationEvent.notifyRequester) {
+        const requester = request?.solicitante
+
+        if (!requester?.id) {
+          return []
+        }
+
+        /**
+         * Evita notificar quem executou a ação.
+         */
+        if (requester.id === actorId) {
+          return []
+        }
+
+        await dispatch({
+          user: {
+            id: requester.id,
+            nome: requester.nome,
+            email: requester.email,
+          },
+
+          request,
+
+          notificationEvent,
+        })
+
+        return [requester]
+      }
+
+      /**
+       * =====================================================
+       * NOTIFICAÇÃO DE WORKFLOW
+       * =====================================================
+       */
 
       /**
        * Usuários ativos
@@ -141,7 +203,7 @@ export default function UseNotifications() {
        * Transforma em Map
        *
        * {
-       *   roleId : role
+       *   roleId: role
        * }
        */
       const roles = rolesList.reduce((acc, role) => {
@@ -153,7 +215,7 @@ export default function UseNotifications() {
       /**
        * Resolve destinatários
        */
-      const recipients = resolveNotificationUsers({
+      let recipients = resolveNotificationUsers({
         event,
 
         request,
@@ -162,6 +224,13 @@ export default function UseNotifications() {
 
         roles,
       })
+
+      /**
+       * Não notifica quem executou a ação.
+       */
+      if (actorId) {
+        recipients = recipients.filter((user) => user.id !== actorId)
+      }
 
       if (!recipients.length) {
         return []

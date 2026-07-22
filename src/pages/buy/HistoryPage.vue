@@ -368,6 +368,7 @@ import useRequests from 'src/composables/UseRequests'
 import usePermissions from 'src/composables/UsePermissions'
 import useAuthUser from 'src/composables/UseAuthUser'
 import useSystemLog from 'src/composables/UseSystemLog'
+import UseNotifications from 'src/composables/UseNotifications'
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 import useApi from 'src/composables/UseApi'
@@ -383,6 +384,7 @@ const { notifyError, notifySuccess } = useNotify()
 const { canViewItem, hasPermission } = usePermissions()
 const { profile } = useAuthUser()
 const { addLog } = useSystemLog()
+const notifications = UseNotifications()
 
 const { getRequests, requestReanalysis, reinforceRequest, duplicateRequest } = useRequests()
 
@@ -684,6 +686,9 @@ const handleReanalysis = async () => {
 
     after.reanalise = payload.reanalise
 
+    after.id = request.id
+    after.requestNumber = request.requestNumber
+
     await addLog({
       module: 'Solicitações',
       action: 'REQUEST_REANALYSIS',
@@ -691,6 +696,14 @@ const handleReanalysis = async () => {
       documentId: request.id,
       before,
       after,
+    })
+
+    await notifications.sendEvent({
+      event: 'REQUEST_REANALYSIS',
+
+      request: after,
+
+      actor: profile.value,
     })
 
     notifySuccess('Solicitação enviada para reanálise.')
@@ -747,6 +760,10 @@ const handleReinforce = async () => {
 
     after.reforco = payload.reforco
 
+    after.id = request.id
+    after.requestNumber = request.requestNumber
+    after.status = REQUEST_STATUS.WAITING
+
     await addLog({
       module: 'Solicitações',
       action: 'REINFORCE',
@@ -754,6 +771,14 @@ const handleReinforce = async () => {
       documentId: request.id,
       before,
       after,
+    })
+
+    await notifications.sendEvent({
+      event: 'REQUEST_REINFORCEMENT',
+
+      request: after,
+
+      actor: profile.value,
     })
 
     notifySuccess('Solicitação enviada com prioridade.')

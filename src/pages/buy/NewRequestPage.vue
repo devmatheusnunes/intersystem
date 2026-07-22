@@ -377,6 +377,7 @@ const save = async () => {
       await notifications.sendEvent({
         event: 'REQUEST_CREATED',
         request,
+        actor: profile.value,
       })
 
       notifySuccess('Solicitação criada com sucesso')

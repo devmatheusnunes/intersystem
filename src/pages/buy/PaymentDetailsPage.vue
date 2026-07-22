@@ -345,6 +345,7 @@ import { useRoute, useRouter } from 'vue-router'
 import useRequests from 'src/composables/UseRequests'
 import useAuthUser from 'src/composables/UseAuthUser'
 import useSystemLog from 'src/composables/UseSystemLog'
+import UseNotifications from 'src/composables/UseNotifications'
 
 import { REQUEST_STATUS } from 'src/constants/requestStatus'
 
@@ -353,6 +354,7 @@ const router = useRouter()
 
 const { realizedRequest, getRequestById } = useRequests()
 const { addLog } = useSystemLog()
+const notifications = UseNotifications()
 const { profile } = useAuthUser()
 
 /* ======================================================
@@ -619,6 +621,9 @@ const handleFinishPayment = async () => {
 
     after.status = REQUEST_STATUS.REALIZED
 
+    after.id = request.value.id
+    after.requestNumber = request.value.requestNumber
+
     await addLog({
       module: 'Solicitações',
       action: 'PAYMENT',
@@ -626,6 +631,22 @@ const handleFinishPayment = async () => {
       documentId: request.value.id,
       before,
       after,
+    })
+
+    await notifications.sendEvent({
+      event: 'REQUEST_TRACKING',
+
+      request: after,
+
+      actor: profile.value,
+    })
+
+    await notifications.sendEvent({
+      event: 'REQUEST_REALIZED',
+
+      request: after,
+
+      actor: profile.value,
     })
 
     router.push('/app/buy/payment')
