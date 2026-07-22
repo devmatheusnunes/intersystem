@@ -9,6 +9,7 @@ import {
   doc,
   serverTimestamp,
   limit,
+  deleteDoc,
 } from 'firebase/firestore'
 
 import { db } from 'boot/firebase'
@@ -279,9 +280,8 @@ export default function UseNotifications() {
       const snapshot = await getDocs(q)
 
       return snapshot.docs.map((item) => ({
-        id: item.id,
-
         ...item.data(),
+        id: item.id,
       }))
     } catch (error) {
       console.error('Erro ao buscar notificações:', error)
@@ -308,9 +308,8 @@ export default function UseNotifications() {
       const snapshot = await getDocs(q)
 
       return snapshot.docs.map((item) => ({
-        id: item.id,
-
         ...item.data(),
+        id: item.id,
       }))
     } catch (error) {
       console.error('Erro ao buscar notificações não lidas:', error)
@@ -390,6 +389,34 @@ export default function UseNotifications() {
     return notifications
   }
 
+  const remove = async (notificationId) => {
+    try {
+      await deleteDoc(doc(db, collectionName, notificationId))
+
+      return true
+    } catch (error) {
+      console.error('Erro ao excluir notificação:', error)
+
+      return false
+    }
+  }
+
+  const clearAllNotifications = async (userId) => {
+    try {
+      const notifications = await getUserNotifications(userId)
+
+      await Promise.all(
+        notifications.map((notification) => deleteDoc(doc(db, collectionName, notification.id))),
+      )
+
+      return true
+    } catch (error) {
+      console.error('Erro ao limpar notificações:', error)
+
+      return false
+    }
+  }
+
   return {
     /**
      * Criação
@@ -417,5 +444,11 @@ export default function UseNotifications() {
     markAsRead,
 
     markAllAsRead,
+
+    /**
+     * Apagar notificação
+     */
+    remove,
+    clearAllNotifications,
   }
 }
