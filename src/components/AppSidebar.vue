@@ -1,16 +1,18 @@
 <template>
   <q-drawer
-    v-model="drawerModel"
-    show-if-above
+    :model-value="drawerOpen"
+    :mini="drawerMini"
+    :overlay="isMobile"
     bordered
-    :mini="isMini"
+    show-if-above
     :width="270"
+    :mini-width="72"
     :breakpoint="768"
     class="bg-dark text-white"
   >
     <div class="column fit no-wrap">
       <!-- ===================================================== -->
-      <!-- LOGO -->
+      <!-- HEADER -->
       <!-- ===================================================== -->
 
       <div class="sidebar-header">
@@ -29,64 +31,87 @@
         <q-list padding>
           <!-- DASHBOARD -->
 
-          <q-item v-for="item in dashboardItems" :key="item.key" clickable :to="item.route">
+          <q-item v-for="item in dashboardItems" :key="item.key" clickable @click="navigate(item)">
             <q-item-section avatar>
               <q-icon :name="item.icon" />
             </q-item-section>
 
-            <q-item-section>
+            <q-item-section v-if="!drawerMini">
               {{ item.title }}
             </q-item-section>
+
+            <q-tooltip v-if="drawerMini" anchor="center right" self="center left">
+              {{ item.title }}
+            </q-tooltip>
           </q-item>
 
           <!-- GRUPOS -->
 
-          <q-expansion-item
-            v-for="group in groupedMenus"
-            :key="group.name"
-            :label="group.name"
-            :icon="group.icon"
-            default-opened
-            header-class="menu-group"
-          >
-            <q-list class="submenu">
-              <q-item
-                v-for="item in group.items"
-                :key="item.key"
-                clickable
-                :to="item.route"
-                class="submenu-item"
-              >
+          <template v-for="group in groupedMenus" :key="group.name">
+            <!-- EXPANDIDO -->
+
+            <q-expansion-item
+              v-if="!drawerMini"
+              :label="group.name"
+              :icon="group.icon"
+              default-opened
+              header-class="menu-group"
+            >
+              <q-list class="submenu">
+                <q-item
+                  v-for="item in group.items"
+                  :key="item.key"
+                  clickable
+                  class="submenu-item"
+                  @click="navigate(item)"
+                >
+                  <q-item-section avatar>
+                    <q-icon :name="item.icon" size="18px" />
+                  </q-item-section>
+
+                  <q-item-section>
+                    {{ item.title }}
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-expansion-item>
+
+            <!-- MINI DRAWER -->
+
+            <template v-else>
+              <q-item v-for="item in group.items" :key="item.key" clickable @click="navigate(item)">
                 <q-item-section avatar>
-                  <q-icon :name="item.icon" size="18px" />
+                  <q-icon :name="item.icon" />
                 </q-item-section>
 
-                <q-item-section>
+                <q-tooltip anchor="center right" self="center left">
                   {{ item.title }}
-                </q-item-section>
+                </q-tooltip>
               </q-item>
-            </q-list>
-          </q-expansion-item>
+            </template>
+          </template>
         </q-list>
       </q-scroll-area>
 
       <!-- ===================================================== -->
-      <!-- RODAPÉ -->
+      <!-- FOOTER -->
       <!-- ===================================================== -->
 
-      <div class="sidebar-footer">
+      <div v-if="!drawerMini" class="sidebar-footer">
         <!-- PERFIL -->
 
-        <q-btn flat no-caps align="left" class="profile-card full-width">
-          <div class="avatar-wrapper">
-            <q-avatar size="42px" color="primary" text-color="white">
-              {{ initial }}
-            </q-avatar>
+        <q-item clickable class="profile-card">
+          <q-item-section avatar>
+            <div class="avatar-wrapper">
+              <q-avatar size="42px" color="primary" text-color="white">
+                {{ initial }}
+              </q-avatar>
 
-            <span class="status-dot"></span>
-          </div>
+              <span class="status-dot"></span>
+            </div>
+          </q-item-section>
 
-          <div class="profile-info">
+          <q-item-section>
             <div class="profile-name">
               {{ userName }}
             </div>
@@ -94,47 +119,82 @@
             <div class="profile-role">
               {{ roleName }}
             </div>
-          </div>
+          </q-item-section>
 
           <q-menu anchor="top left" self="bottom left">
             <q-list style="min-width: 220px">
               <q-item clickable @click="goToProfile">
                 <q-item-section avatar>
-                  <q-icon name="person" color="primary" />
+                  <q-icon name="person" />
                 </q-item-section>
 
                 <q-item-section> Meu Perfil </q-item-section>
               </q-item>
+
+              <q-separator />
+
+              <q-item clickable @click="handleLogout">
+                <q-item-section avatar>
+                  <q-icon name="logout" />
+                </q-item-section>
+
+                <q-item-section> Sair </q-item-section>
+              </q-item>
             </q-list>
           </q-menu>
-        </q-btn>
-
-        <!-- LINHA -->
+        </q-item>
 
         <q-separator dark class="footer-divider" />
-
-        <!-- AÇÕES -->
 
         <div class="footer-actions">
           <div class="system-version">
             {{ appVersion }}
           </div>
 
-          <span />
-
           <q-btn
-            class="q-px-xs q-py-xs"
-            size="10px"
+            color="primary"
             unelevated
             rounded
+            no-caps
+            size="10px"
             outline
-            color="primary"
             icon="logout"
             label="Encerrar Sessão"
-            no-caps
             @click="handleLogout"
           />
         </div>
+      </div>
+
+      <!-- ===================================================== -->
+      <!-- FOOTER MINI -->
+      <!-- ===================================================== -->
+
+      <div v-else-if="!isMobile" class="mini-footer">
+        <q-avatar color="primary" text-color="white" size="42px">
+          {{ initial }}
+        </q-avatar>
+
+        <q-menu anchor="top right" self="bottom right">
+          <q-list style="min-width: 220px">
+            <q-item clickable @click="goToProfile">
+              <q-item-section avatar>
+                <q-icon name="person" />
+              </q-item-section>
+
+              <q-item-section> Meu Perfil </q-item-section>
+            </q-item>
+
+            <q-separator />
+
+            <q-item clickable @click="handleLogout">
+              <q-item-section avatar>
+                <q-icon name="logout" />
+              </q-item-section>
+
+              <q-item-section> Sair </q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
       </div>
     </div>
   </q-drawer>
@@ -150,43 +210,61 @@ import useSystemLog from 'src/composables/UseSystemLog'
 
 import { SYSTEM_MODULES } from 'src/permissions/modules'
 
-const emit = defineEmits(['update:modelValue'])
+/* ==========================================================================
+ * PROPS / EMITS
+ * ========================================================================== */
+
+const props = defineProps({
+  drawerState: {
+    type: String,
+    required: true,
+  },
+
+  isMobile: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(['expand-drawer', 'close-drawer'])
+
+/* ==========================================================================
+ * ROUTER
+ * ========================================================================== */
 
 const router = useRouter()
 
+/* ==========================================================================
+ * COMPOSABLES
+ * ========================================================================== */
+
 const { hasPermission } = usePermissions()
+
 const { user, profile, logout } = useAuthUser()
+
 const { addLog } = useSystemLog()
 
-/*
-|--------------------------------------------------------------------------
-| Versão da aplicação
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+ * APP
+ * ========================================================================== */
 
-const appVersion = 'Versão 3.7'
+const appVersion = 'versão 3.8'
 
-/*
-|--------------------------------------------------------------------------
-| Drawer
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+ * DRAWER
+ * ========================================================================== */
 
-const props = defineProps({
-  modelValue: Boolean,
-  miniState: Boolean,
+const drawerOpen = computed(() => {
+  return props.drawerState !== 'closed'
 })
 
-const drawerModel = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+const drawerMini = computed(() => {
+  return !props.isMobile && props.drawerState === 'mini'
 })
 
-/*
-|--------------------------------------------------------------------------
-| Módulos Visíveis
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+ * MENU
+ * ========================================================================== */
 
 const visibleModules = computed(() =>
   SYSTEM_MODULES.filter((module) => {
@@ -202,19 +280,7 @@ const visibleModules = computed(() =>
   }),
 )
 
-/*
-|--------------------------------------------------------------------------
-| Dashboard
-|--------------------------------------------------------------------------
-*/
-
 const dashboardItems = computed(() => visibleModules.value.filter((item) => !item.group))
-
-/*
-|--------------------------------------------------------------------------
-| Agrupamento dos Menus
-|--------------------------------------------------------------------------
-*/
 
 const groupedMenus = computed(() => {
   const groups = {}
@@ -225,7 +291,9 @@ const groupedMenus = computed(() => {
       if (!groups[item.group]) {
         groups[item.group] = {
           name: item.group,
+
           icon: item.group === 'CONFIGURAÇÕES' ? 'settings' : 'shopping_cart',
+
           items: [],
         }
       }
@@ -240,11 +308,9 @@ const groupedMenus = computed(() => {
   return Object.values(groups)
 })
 
-/*
-|--------------------------------------------------------------------------
-| Usuário
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+ * USUÁRIO
+ * ========================================================================== */
 
 const userName = computed(() => {
   return profile.value?.nome || user.value?.displayName || user.value?.email || 'Usuário'
@@ -258,28 +324,43 @@ const initial = computed(() => {
   return userName.value.charAt(0).toUpperCase()
 })
 
-/*
-|--------------------------------------------------------------------------
-| Navegação
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+ * NAVEGAÇÃO
+ * ========================================================================== */
 
-const goToProfile = () => {
-  router.push('/app/profile')
+const navigate = async (item) => {
+  if (drawerMini.value) {
+    emit('expand-drawer')
+  }
+
+  if (props.isMobile) {
+    emit('close-drawer')
+  }
+
+  await router.push(item.route)
 }
 
-/*
-|--------------------------------------------------------------------------
-| Logout
-|--------------------------------------------------------------------------
-*/
+const goToProfile = async () => {
+  if (drawerMini.value) {
+    emit('expand-drawer')
+  }
+
+  await router.push('/app/profile')
+}
+
+/* ==========================================================================
+ * LOGOUT
+ * ========================================================================== */
 
 const handleLogout = async () => {
   try {
     await addLog({
       module: 'Autenticação',
+
       action: 'LOGOUT',
+
       description: `${userName.value} encerrou a sessão no sistema`,
+
       metadata: {
         email: user.value?.email,
       },
@@ -292,17 +373,13 @@ const handleLogout = async () => {
 
   router.push('/')
 }
-
-/*
-|--------------------------------------------------------------------------
-| Mini Drawer
-|--------------------------------------------------------------------------
-*/
-
-const isMini = computed(() => props.miniState)
 </script>
 
 <style scoped>
+/* ==========================================================
+   DRAWER
+========================================================== */
+
 .bg-dark {
   background: #212529;
 }
@@ -317,11 +394,14 @@ const isMini = computed(() => props.miniState)
   align-items: center;
   padding: 28px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 84px;
+  transition: all 0.25s ease;
 }
 
 .sidebar-logo {
   width: 155px;
   max-width: 100%;
+  transition: all 0.25s ease;
 }
 
 /* ==========================================================
@@ -387,13 +467,9 @@ const isMini = computed(() => props.miniState)
 ========================================================== */
 
 .profile-card {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  padding: 10px;
   border-radius: 14px;
-  transition: 0.2s;
+  padding: 10px 8px;
+  transition: all 0.2s ease;
 }
 
 .profile-card:hover {
@@ -412,8 +488,6 @@ const isMini = computed(() => props.miniState)
   font-weight: 600;
   font-size: 16px;
 }
-
-/* Status Online */
 
 .status-dot {
   position: absolute;
@@ -434,7 +508,6 @@ const isMini = computed(() => props.miniState)
 ========================================================== */
 
 .profile-info {
-  margin-left: 14px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -488,7 +561,28 @@ const isMini = computed(() => props.miniState)
 }
 
 /* ==========================================================
-   SCROLL
+   MINI FOOTER
+========================================================== */
+
+.mini-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mini-footer .q-avatar {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.mini-footer .q-avatar:hover {
+  transform: scale(1.05);
+}
+
+/* ==========================================================
+   SCROLL AREA
 ========================================================== */
 
 .q-scrollarea__content {
@@ -501,24 +595,82 @@ const isMini = computed(() => props.miniState)
 
 .q-drawer--mini .sidebar-header {
   padding: 18px 10px;
+  min-height: 72px;
 }
 
 .q-drawer--mini .sidebar-logo {
-  width: 42px;
+  width: 36px;
 }
 
-.q-drawer--mini .sidebar-footer {
-  padding: 10px;
-}
-
-.q-drawer--mini .profile-info,
-.q-drawer--mini .footer-actions,
-.q-drawer--mini .footer-divider {
-  display: none;
-}
-
-.q-drawer--mini .profile-card {
+.q-drawer--mini .q-item {
   justify-content: center;
-  padding: 6px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.q-drawer--mini .q-item__section--avatar {
+  min-width: 0;
+}
+
+.q-drawer--mini .q-icon {
+  font-size: 22px;
+}
+
+.q-drawer--mini .submenu {
+  margin-left: 0;
+  border-left: none;
+}
+
+/* ==========================================================
+   TOOLTIP
+========================================================== */
+
+.q-tooltip {
+  font-size: 12px;
+}
+
+/* ==========================================================
+   RESPONSIVO
+========================================================== */
+
+@media (max-width: 767px) {
+  .sidebar-header {
+    padding: 24px 16px;
+  }
+
+  .sidebar-logo {
+    width: 145px;
+  }
+
+  .sidebar-footer {
+    padding: 16px;
+  }
+
+  .footer-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .footer-actions .q-btn {
+    width: 100%;
+  }
+}
+
+/* ==========================================================
+   TRANSIÇÕES DO DRAWER
+========================================================== */
+
+.q-drawer {
+  transition:
+    width 0.25s ease,
+    transform 0.25s ease;
+}
+
+.sidebar-header,
+.sidebar-logo,
+.profile-info,
+.footer-actions {
+  transition: all 0.2s ease;
 }
 </style>

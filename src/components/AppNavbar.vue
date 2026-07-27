@@ -1,44 +1,80 @@
 <template>
   <q-header elevated class="bg-dark text-white">
     <q-toolbar>
-      <!-- MENU -->
-      <q-btn
-        flat
-        round
-        dense
-        :icon="miniState ? 'menu_open' : 'menu'"
-        @click="$emit('toggle-mini')"
-      />
+      <q-btn flat round dense :icon="menuIcon" @click="$emit('toggle-drawer')" />
 
       <q-space />
 
-      <!-- NOTIFICAÇÕES -->
       <NotificationBell />
     </q-toolbar>
   </q-header>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 import NotificationBell from 'src/components/NotificationBell.vue'
 
-defineProps({
-  miniState: {
+const props = defineProps({
+  drawerState: {
+    type: String,
+    required: true,
+  },
+
+  isMobile: {
     type: Boolean,
     default: false,
   },
 })
 
-defineEmits(['toggle-mini'])
+defineEmits(['toggle-drawer'])
+
+/*
+|--------------------------------------------------------------------------
+| Ícone do botão
+|--------------------------------------------------------------------------
+|
+| Desktop:
+|
+| expanded -> menu_open
+| mini     -> menu
+| closed   -> menu
+|
+| Mobile:
+|
+| aberto   -> close
+| fechado  -> menu
+|--------------------------------------------------------------------------
+*/
+
+const menuIcon = computed(() => {
+  if (props.isMobile) {
+    return props.drawerState === 'closed' ? 'menu' : 'close'
+  }
+
+  switch (props.drawerState) {
+    case 'expanded':
+      return 'menu_open'
+
+    case 'mini':
+      return 'close'
+
+    default:
+      return 'menu'
+  }
+})
 </script>
 
 <style scoped>
 .bg-dark {
   background: #212529;
 }
-</style>
 
-<style scoped>
-.bg-dark {
-  background: #212529;
+.q-toolbar {
+  min-height: 56px;
+}
+
+.q-btn {
+  transition: all 0.25s ease;
 }
 </style>

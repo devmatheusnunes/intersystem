@@ -1,8 +1,13 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <AppNavbar :mini-state="miniState" @toggle-mini="miniState = !miniState" />
+    <AppNavbar :drawer-state="drawerState" :is-mobile="isMobile" @toggle-drawer="toggleDrawer" />
 
-    <AppSidebar v-model="leftDrawerOpen" :mini-state="miniState" />
+    <AppSidebar
+      :drawer-state="drawerState"
+      :is-mobile="isMobile"
+      @expand-drawer="expandDrawer"
+      @close-drawer="drawerState = 'closed'"
+    />
 
     <q-page-container>
       <router-view />
@@ -11,11 +16,83 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useQuasar } from 'quasar'
 
 import AppNavbar from 'src/components/AppNavbar.vue'
 import AppSidebar from 'src/components/AppSidebar.vue'
 
-const leftDrawerOpen = ref(true)
-const miniState = ref(false)
+const $q = useQuasar()
+
+/*
+|--------------------------------------------------------------------------
+| Desktop / Mobile
+|--------------------------------------------------------------------------
+*/
+
+const isMobile = computed(() => $q.screen.lt.md)
+
+/*
+|--------------------------------------------------------------------------
+| Drawer State
+|
+| expanded
+| mini
+| closed
+|--------------------------------------------------------------------------
+*/
+
+const drawerState = ref(localStorage.getItem('drawerState') || 'expanded')
+
+watch(drawerState, (value) => {
+  localStorage.setItem('drawerState', value)
+})
+
+watch(isMobile, (mobile) => {
+  if (mobile) {
+    drawerState.value = 'closed'
+  } else if (drawerState.value === 'closed') {
+    drawerState.value = 'expanded'
+  }
+})
+
+/*
+|--------------------------------------------------------------------------
+| Toggle Drawer
+|--------------------------------------------------------------------------
+*/
+
+const toggleDrawer = () => {
+  if (isMobile.value) {
+    drawerState.value = drawerState.value === 'closed' ? 'expanded' : 'closed'
+
+    return
+  }
+
+  switch (drawerState.value) {
+    case 'expanded':
+      drawerState.value = 'mini'
+      break
+
+    case 'mini':
+      drawerState.value = 'closed'
+      break
+
+    default:
+      drawerState.value = 'expanded'
+      break
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Expand Drawer
+|--------------------------------------------------------------------------
+*/
+
+const expandDrawer = () => {
+  if (!isMobile.value) {
+    drawerState.value = 'expanded'
+  }
+}
 </script>
