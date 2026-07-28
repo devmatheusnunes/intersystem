@@ -1,6 +1,7 @@
 <template>
   <q-drawer
     :model-value="drawerOpen"
+    @update:model-value="onDrawerModelUpdate"
     :mini="drawerMini"
     :overlay="isMobile"
     bordered
@@ -228,6 +229,18 @@ const props = defineProps({
 
 const emit = defineEmits(['expand-drawer', 'close-drawer'])
 
+const onDrawerModelUpdate = (value) => {
+  // Só interessa no mobile
+  if (!props.isMobile) {
+    return
+  }
+
+  // O usuário fechou o drawer clicando no backdrop
+  if (!value) {
+    emit('close-drawer')
+  }
+}
+
 /* ==========================================================================
  * ROUTER
  * ========================================================================== */
@@ -248,7 +261,7 @@ const { addLog } = useSystemLog()
  * APP
  * ========================================================================== */
 
-const appVersion = 'versão 3.8'
+const appVersion = 'versão 4.1'
 
 /* ==========================================================================
  * DRAWER
@@ -333,11 +346,11 @@ const navigate = async (item) => {
     emit('expand-drawer')
   }
 
+  await router.push(item.route)
+
   if (props.isMobile) {
     emit('close-drawer')
   }
-
-  await router.push(item.route)
 }
 
 const goToProfile = async () => {
@@ -346,6 +359,10 @@ const goToProfile = async () => {
   }
 
   await router.push('/app/profile')
+
+  if (props.isMobile) {
+    emit('close-drawer')
+  }
 }
 
 /* ==========================================================================

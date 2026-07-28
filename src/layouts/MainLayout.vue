@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="lhh LpR lff">
     <AppNavbar :drawer-state="drawerState" :is-mobile="isMobile" @toggle-drawer="toggleDrawer" />
 
     <AppSidebar
@@ -56,6 +56,14 @@ watch(isMobile, (mobile) => {
   }
 })
 
+watch(isMobile, (mobile) => {
+  if (mobile) {
+    drawerState.value = 'closed'
+  } else if (drawerState.value === 'closed') {
+    drawerState.value = localStorage.getItem('drawerState') || 'expanded'
+  }
+})
+
 /*
 |--------------------------------------------------------------------------
 | Toggle Drawer
@@ -63,12 +71,14 @@ watch(isMobile, (mobile) => {
 */
 
 const toggleDrawer = () => {
+  // MOBILE
   if (isMobile.value) {
     drawerState.value = drawerState.value === 'closed' ? 'expanded' : 'closed'
 
     return
   }
 
+  // DESKTOP
   switch (drawerState.value) {
     case 'expanded':
       drawerState.value = 'mini'

@@ -49,7 +49,7 @@ defineEmits(['toggle-drawer'])
 
 const menuIcon = computed(() => {
   if (props.isMobile) {
-    return props.drawerState === 'closed' ? 'menu' : 'close'
+    return props.drawerState === 'expanded' ? 'close' : 'menu'
   }
 
   switch (props.drawerState) {
@@ -57,7 +57,7 @@ const menuIcon = computed(() => {
       return 'menu_open'
 
     case 'mini':
-      return 'close'
+      return 'menu'
 
     default:
       return 'menu'
