@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   limit,
   deleteDoc,
+  onSnapshot,
 } from 'firebase/firestore'
 
 import { db } from 'boot/firebase'
@@ -26,6 +27,28 @@ export default function UseNotifications() {
   const api = useApi()
 
   const collectionName = 'notifications'
+
+  const watchUnread = (userId, callback) => {
+    if (!userId) {
+      return () => {}
+    }
+    const q = query(
+      collection(db, collectionName),
+      where('userId', '==', userId),
+      where('read', '==', false),
+    )
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        callback(snapshot.size)
+      },
+      (error) => {
+        console.error('Erro ao observar notificações não lidas:', error)
+
+        callback(0)
+      },
+    )
+  }
 
   /**
    * Criar notificação individual
@@ -437,6 +460,8 @@ export default function UseNotifications() {
     getLatest,
 
     countUnread,
+
+    watchUnread,
 
     /**
      * Controle leitura
