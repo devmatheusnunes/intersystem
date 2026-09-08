@@ -14,12 +14,15 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import NotificationCenter from './NotificationCenter.vue'
 
 import UseNotifications from 'src/composables/UseNotifications'
+import UseBrowserNotifications from 'src/composables/UseBrowserNotifications'
 import useAuthUser from 'src/composables/UseAuthUser'
 
 const center = ref(null)
 const unreadCount = ref(0)
 
 const notificationsApi = UseNotifications()
+const browserNotifications = UseBrowserNotifications()
+
 const { profile } = useAuthUser()
 
 const userId = computed(() => profile.value?.id || profile.value?.userId || profile.value?.uid)
@@ -36,10 +39,6 @@ const updateCount = (count) => {
   unreadCount.value = count
 }
 
-const refresh = async () => {
-  await center.value?.loadNotifications?.()
-}
-
 let stopWatching = null
 
 const startWatching = () => {
@@ -53,9 +52,25 @@ const startWatching = () => {
     return
   }
 
-  stopWatching = notificationsApi.watchUnread(userId.value, (count) => {
+  stopWatching = notificationsApi.watchUnread(userId.value, ({ count, added }) => {
     unreadCount.value = count
+
+    for (const notification of added) {
+      browserNotifications.notify({
+        title: notification.title || 'Nova notificação',
+        body: notification.message || '',
+        tag: `notification-${notification.id}`,
+        data: {
+          notificationId: notification.id,
+          requestId: notification.requestId || null,
+        },
+      })
+    }
   })
+}
+
+const refresh = async () => {
+  await center.value?.loadNotifications?.()
 }
 
 onMounted(() => {
@@ -69,6 +84,7 @@ watch(userId, () => {
 onUnmounted(() => {
   if (stopWatching) {
     stopWatching()
+    stopWatching = null
   }
 })
 </script>

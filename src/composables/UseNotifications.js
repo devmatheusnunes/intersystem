@@ -32,20 +32,49 @@ export default function UseNotifications() {
     if (!userId) {
       return () => {}
     }
+
     const q = query(
       collection(db, collectionName),
       where('userId', '==', userId),
       where('read', '==', false),
     )
+
+    let initialized = false
+
     return onSnapshot(
       q,
       (snapshot) => {
-        callback(snapshot.size)
+        const notifications = snapshot.docs.map((item) => ({
+          ...item.data(),
+          id: item.id,
+        }))
+
+        const added = initialized
+          ? snapshot
+              .docChanges()
+              .filter((change) => change.type === 'added')
+              .map((change) => ({
+                ...change.doc.data(),
+                id: change.doc.id,
+              }))
+          : []
+
+        initialized = true
+
+        callback({
+          count: snapshot.size,
+          notifications,
+          added,
+        })
       },
       (error) => {
         console.error('Erro ao observar notificações não lidas:', error)
 
-        callback(0)
+        callback({
+          count: 0,
+          notifications: [],
+          added: [],
+        })
       },
     )
   }
