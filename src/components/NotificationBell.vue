@@ -3,7 +3,41 @@
     <q-badge v-if="unreadCount > 0" floating rounded color="negative" :label="badgeLabel" />
 
     <q-menu anchor="bottom right" self="top right" fit @before-show="refresh">
-      <NotificationCenter ref="center" @update:count="updateCount" />
+      <div class="notification-menu">
+        <div class="notification-menu__header">
+          <div class="text-subtitle1 text-weight-medium">Notificações</div>
+
+          <q-btn
+            v-if="browserNotifications.supported && !browserNotifications.enabled"
+            flat
+            dense
+            size="sm"
+            icon="notifications_active"
+            color="primary"
+            label="Ativar"
+            @click.stop="enableBrowserNotifications"
+          >
+            <q-tooltip> Ativar notificações do navegador </q-tooltip>
+          </q-btn>
+        </div>
+
+        <q-banner
+          v-if="browserNotifications.supported && browserNotifications.permission === 'denied'"
+          dense
+          class="notification-menu__permission"
+        >
+          <template #avatar>
+            <q-icon name="notifications_off" />
+          </template>
+
+          <div class="text-caption">
+            As notificações do navegador estão bloqueadas. Para recebê-las, permita as notificações
+            nas configurações do navegador.
+          </div>
+        </q-banner>
+
+        <NotificationCenter ref="center" @update:count="updateCount" />
+      </div>
     </q-menu>
   </q-btn>
 </template>
@@ -25,7 +59,9 @@ const browserNotifications = UseBrowserNotifications()
 
 const { profile } = useAuthUser()
 
-const userId = computed(() => profile.value?.id || profile.value?.userId || profile.value?.uid)
+const userId = computed(() => {
+  return profile.value?.id || profile.value?.userId || profile.value?.uid || null
+})
 
 const badgeLabel = computed(() => {
   if (unreadCount.value > 99) {
@@ -69,6 +105,10 @@ const startWatching = () => {
   })
 }
 
+const enableBrowserNotifications = async () => {
+  await browserNotifications.requestPermission()
+}
+
 const refresh = async () => {
   await center.value?.loadNotifications?.()
 }
@@ -92,5 +132,22 @@ onUnmounted(() => {
 <style scoped>
 .notification-bell {
   position: relative;
+}
+
+.notification-menu {
+  width: 420px;
+  max-width: 90vw;
+}
+
+.notification-menu__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.notification-menu__permission {
+  margin: 8px;
 }
 </style>
