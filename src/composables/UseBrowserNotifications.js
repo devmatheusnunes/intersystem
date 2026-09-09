@@ -17,11 +17,20 @@ export default function UseBrowserNotifications() {
       return false
     }
 
+    /*
+     * O navegador já concedeu a permissão.
+     */
     if (Notification.permission === 'granted') {
       permission.value = 'granted'
       return true
     }
 
+    /*
+     * O navegador bloqueou as notificações.
+     *
+     * Nesse caso o JavaScript não consegue
+     * solicitar a permissão novamente.
+     */
     if (Notification.permission === 'denied') {
       permission.value = 'denied'
       return false
@@ -49,11 +58,11 @@ export default function UseBrowserNotifications() {
     tag = 'system-notification',
     data = {},
   }) => {
-    if (!supported.value) {
-      return null
-    }
-
-    if (Notification.permission !== 'granted') {
+    /*
+     * Só envia a notificação se o navegador
+     * tiver concedido permissão.
+     */
+    if (!enabled.value) {
       return null
     }
 
@@ -68,6 +77,7 @@ export default function UseBrowserNotifications() {
       window.focus()
 
       if (!data.requestId) {
+        notification.close()
         return
       }
 
