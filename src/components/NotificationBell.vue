@@ -19,6 +19,19 @@
           >
             <q-tooltip> Ativar notificações do navegador </q-tooltip>
           </q-btn>
+
+          <q-btn
+            v-else-if="browserNotifications.supported && browserNotifications.enabled"
+            flat
+            dense
+            size="sm"
+            icon="notifications_active"
+            color="positive"
+            label="Ativadas"
+            disable
+          >
+            <q-tooltip> As notificações do navegador estão ativadas </q-tooltip>
+          </q-btn>
         </div>
 
         <q-banner
