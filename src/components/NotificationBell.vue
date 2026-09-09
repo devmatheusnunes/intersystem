@@ -7,8 +7,9 @@
         <div class="notification-menu__header">
           <div class="text-subtitle1 text-weight-medium">Notificações</div>
 
+          <!-- NOTIFICAÇÕES NÃO ATIVADAS -->
           <q-btn
-            v-if="browserNotifications.supported && !browserNotifications.enabled"
+            v-if="browserNotificationSupported && !browserNotificationEnabled"
             flat
             dense
             size="sm"
@@ -20,8 +21,9 @@
             <q-tooltip> Ativar notificações do navegador </q-tooltip>
           </q-btn>
 
+          <!-- NOTIFICAÇÕES ATIVADAS -->
           <q-btn
-            v-else-if="browserNotifications.supported && browserNotifications.enabled"
+            v-else-if="browserNotificationSupported && browserNotificationEnabled"
             flat
             dense
             size="sm"
@@ -34,8 +36,9 @@
           </q-btn>
         </div>
 
+        <!-- NAVEGADOR BLOQUEOU AS NOTIFICAÇÕES -->
         <q-banner
-          v-if="browserNotifications.supported && browserNotifications.permission === 'denied'"
+          v-if="browserNotificationSupported && browserNotificationPermission === 'denied'"
           dense
           class="notification-menu__permission"
         >
@@ -67,15 +70,68 @@ import useAuthUser from 'src/composables/UseAuthUser'
 const center = ref(null)
 const unreadCount = ref(0)
 
+/*
+ * =====================================================
+ * NOTIFICAÇÕES DO SISTEMA
+ * =====================================================
+ */
 const notificationsApi = UseNotifications()
+
+/*
+ * =====================================================
+ * NOTIFICAÇÕES DO NAVEGADOR
+ * =====================================================
+ */
 const browserNotifications = UseBrowserNotifications()
 
+const browserNotificationSupported = ref(false)
+const browserNotificationPermission = ref('denied')
+
+const browserNotificationEnabled = computed(() => {
+  return browserNotificationSupported.value && browserNotificationPermission.value === 'granted'
+})
+
+/*
+ * =====================================================
+ * VERIFICAR PERMISSÃO REAL DO NAVEGADOR
+ * =====================================================
+ *
+ * Esta função consulta diretamente o navegador.
+ *
+ * Não utiliza estado salvo.
+ * Não utiliza localStorage.
+ * Não utiliza Firebase.
+ * Não depende da conta logada.
+ */
+const checkBrowserNotificationPermission = () => {
+  const supported = typeof window !== 'undefined' && 'Notification' in window
+
+  browserNotificationSupported.value = supported
+
+  if (!supported) {
+    browserNotificationPermission.value = 'denied'
+    return
+  }
+
+  browserNotificationPermission.value = Notification.permission
+}
+
+/*
+ * =====================================================
+ * AUTENTICAÇÃO
+ * =====================================================
+ */
 const { profile } = useAuthUser()
 
 const userId = computed(() => {
   return profile.value?.id || profile.value?.userId || profile.value?.uid || null
 })
 
+/*
+ * =====================================================
+ * BADGE
+ * =====================================================
+ */
 const badgeLabel = computed(() => {
   if (unreadCount.value > 99) {
     return '99+'
@@ -88,6 +144,11 @@ const updateCount = (count) => {
   unreadCount.value = count
 }
 
+/*
+ * =====================================================
+ * FIRESTORE
+ * =====================================================
+ */
 let stopWatching = null
 
 const startWatching = () => {
@@ -107,10 +168,14 @@ const startWatching = () => {
     for (const notification of added) {
       browserNotifications.notify({
         title: notification.title || 'Nova notificação',
+
         body: notification.message || '',
+
         tag: `notification-${notification.id}`,
+
         data: {
           notificationId: notification.id,
+
           requestId: notification.requestId || null,
         },
       })
@@ -118,16 +183,86 @@ const startWatching = () => {
   })
 }
 
+/*
+ * =====================================================
+ * ATIVAR NOTIFICAÇÕES
+ * =====================================================
+ */
 const enableBrowserNotifications = async () => {
-  await browserNotifications.requestPermission()
+  const granted = await browserNotifications.requestPermission()
+
+  /*
+   * Depois da solicitação, consulta novamente
+   * o estado real do navegador.
+   */
+  checkBrowserNotificationPermission()
+
+  /*
+   * Se foi concedido, o botão muda imediatamente
+   * para "Ativadas".
+   */
+  if (granted) {
+    browserNotificationPermission.value = 'granted'
+  }
 }
 
+/*
+ * =====================================================
+ * ATUALIZAR MENU
+ * =====================================================
+ */
 const refresh = async () => {
+  /*
+   * PRIMEIRO verifica a permissão real.
+   */
+  checkBrowserNotificationPermission()
+
+  /*
+   * DEPOIS atualiza as notificações do sistema.
+   */
   await center.value?.loadNotifications?.()
 }
 
+/*
+ * =====================================================
+ * EVENTOS DO NAVEGADOR
+ * =====================================================
+ *
+ * Caso o usuário altere a permissão nas configurações
+ * do navegador e volte para a aplicação.
+ */
+const handleFocus = () => {
+  checkBrowserNotificationPermission()
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    checkBrowserNotificationPermission()
+  }
+}
+
+/*
+ * =====================================================
+ * CICLO DE VIDA
+ * =====================================================
+ */
 onMounted(() => {
+  /*
+   * Verificação inicial.
+   */
+  checkBrowserNotificationPermission()
+
+  /*
+   * Listener das notificações do Firestore.
+   */
   startWatching()
+
+  /*
+   * Verifica quando o usuário volta ao navegador.
+   */
+  window.addEventListener('focus', handleFocus)
+
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 watch(userId, () => {
@@ -139,6 +274,10 @@ onUnmounted(() => {
     stopWatching()
     stopWatching = null
   }
+
+  window.removeEventListener('focus', handleFocus)
+
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 

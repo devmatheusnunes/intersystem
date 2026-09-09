@@ -1,4 +1,5 @@
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+
 import { useRouter } from 'vue-router'
 
 export default function UseBrowserNotifications() {
@@ -6,33 +7,113 @@ export default function UseBrowserNotifications() {
 
   const supported = ref(typeof window !== 'undefined' && 'Notification' in window)
 
-  const permission = ref(supported.value ? Notification.permission : 'denied')
+  const permission = ref('denied')
 
+  let permissionStatus = null
+
+  /*
+   * =====================================================
+   * VERIFICAR PERMISSÃO REAL DO NAVEGADOR
+   * =====================================================
+   */
+  const checkPermission = () => {
+    if (!supported.value) {
+      permission.value = 'denied'
+      return permission.value
+    }
+
+    permission.value = Notification.permission
+
+    return permission.value
+  }
+
+  /*
+   * =====================================================
+   * ESTADO DAS NOTIFICAÇÕES
+   * =====================================================
+   *
+   * Só consideramos ativada quando o navegador
+   * realmente informa "granted".
+   */
   const enabled = computed(() => {
     return supported.value && permission.value === 'granted'
   })
 
+  /*
+   * =====================================================
+   * OBSERVAR ALTERAÇÃO DA PERMISSÃO
+   * =====================================================
+   */
+  const watchPermission = async () => {
+    if (!supported.value) {
+      return
+    }
+
+    /*
+     * Primeira verificação.
+     */
+    checkPermission()
+
+    /*
+     * Alguns navegadores suportam a Permissions API.
+     *
+     * Isso permite detectar quando o usuário altera
+     * a permissão nas configurações do navegador.
+     */
+    if (typeof navigator !== 'undefined' && navigator.permissions && navigator.permissions.query) {
+      try {
+        permissionStatus = await navigator.permissions.query({
+          name: 'notifications',
+        })
+
+        permission.value = permissionStatus.state
+
+        permissionStatus.onchange = () => {
+          checkPermission()
+        }
+      } catch (error) {
+        /*
+         * Alguns navegadores podem não permitir
+         * a consulta de "notifications".
+         *
+         * Nesse caso continuamos utilizando
+         * Notification.permission.
+         */
+        console.warn('Não foi possível observar a permissão das notificações:', error)
+      }
+    }
+  }
+
+  /*
+   * =====================================================
+   * SOLICITAR PERMISSÃO
+   * =====================================================
+   */
   const requestPermission = async () => {
+    /*
+     * Sempre verifica o estado real antes de fazer
+     * qualquer coisa.
+     */
+    checkPermission()
+
     if (!supported.value) {
       return false
     }
 
     /*
-     * O navegador já concedeu a permissão.
+     * Já está permitido.
      */
-    if (Notification.permission === 'granted') {
-      permission.value = 'granted'
+    if (permission.value === 'granted') {
       return true
     }
 
     /*
-     * O navegador bloqueou as notificações.
+     * O navegador bloqueou.
      *
-     * Nesse caso o JavaScript não consegue
-     * solicitar a permissão novamente.
+     * Nesse estado o site não consegue abrir
+     * novamente o diálogo de permissão.
      */
-    if (Notification.permission === 'denied') {
-      permission.value = 'denied'
+    if (permission.value === 'denied') {
       return false
     }
 
@@ -45,12 +126,17 @@ export default function UseBrowserNotifications() {
     } catch (error) {
       console.error('Erro ao solicitar permissão para notificações:', error)
 
-      permission.value = Notification.permission
+      checkPermission()
 
       return false
     }
   }
 
+  /*
+   * =====================================================
+   * NOTIFICAÇÃO
+   * =====================================================
+   */
   const notify = ({
     title,
     body = '',
@@ -59,9 +145,13 @@ export default function UseBrowserNotifications() {
     data = {},
   }) => {
     /*
-     * Só envia a notificação se o navegador
-     * tiver concedido permissão.
+     * Antes de disparar, verifica novamente
+     * a permissão REAL do navegador.
+     *
+     * Isso evita utilizar um estado antigo.
      */
+    checkPermission()
+
     if (!enabled.value) {
       return null
     }
@@ -95,10 +185,54 @@ export default function UseBrowserNotifications() {
     return notification
   }
 
+  /*
+   * =====================================================
+   * QUANDO A JANELA VOLTA AO FOCO
+   * =====================================================
+   *
+   * Útil quando o usuário vai até as configurações
+   * do navegador, altera a permissão e volta para o
+   * sistema.
+   */
+  const handleFocus = () => {
+    checkPermission()
+  }
+
+  /*
+   * =====================================================
+   * QUANDO A ABA VOLTA A FICAR VISÍVEL
+   * =====================================================
+   */
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      checkPermission()
+    }
+  }
+
+  onMounted(() => {
+    checkPermission()
+    watchPermission()
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  })
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('focus', handleFocus)
+
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+
+    if (permissionStatus) {
+      permissionStatus.onchange = null
+      permissionStatus = null
+    }
+  })
+
   return {
     supported,
     permission,
     enabled,
+    checkPermission,
     requestPermission,
     notify,
   }
